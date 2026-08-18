@@ -10,11 +10,9 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
  */
 export const persistenceMode: 'supabase' | 'local' = url && anonKey ? 'supabase' : 'local';
 
-export const REQUIRED_ENV = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY'] as const;
-
 const client = url && anonKey ? createClient(url, anonKey) : null;
 
-export type EventKind = 'start' | 'click' | 'back' | 'submit' | 'giveup';
+export type EventKind = 'start' | 'click' | 'back' | 'submit' | 'giveup' | 'mode';
 
 export type StudyEvent = {
   session_id: string;
@@ -122,11 +120,7 @@ export function exportLocalResults() {
 
 export function localResultCount() {
   const store = readLocal();
-  return {
-    sessions: store.sessions.length,
-    finished: store.sessions.filter((s) => s.finished_at).length,
-    events: store.events.length,
-  };
+  return { sessions: store.sessions.length, events: store.events.length };
 }
 
 export function clearLocalResults() {

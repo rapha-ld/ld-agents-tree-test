@@ -466,3 +466,33 @@ what happened locally and remotely, instead of swallowing failures into a
 their answers were recorded; it asks them to tell whoever is running the study. Without
 that, a typo in a key would have produced a study that collected nothing and reported
 success to every participant.
+
+## Mode switchers, and a plainer report
+
+**The grammar gained mode switchers.** Modelling today's navigation as sections under a
+Code / Agents segmented control turned out to matter, because it is not equivalent to two
+ordinary top-level items. Someone in the default mode sees the code sections already opened
+beneath the control, and the agent sections only exist for them once they notice the
+control. Declaring `modes` in the frontmatter and tagging sections `[mode=code]` captures
+that: the default mode costs nothing, any other mode costs a click plus a glance.
+
+Three consequences fell out of it. Each mode is walked separately, since the visible
+sections and therefore the top-level scan differ per mode. Duplication had to start counting
+distinct label paths, because a section shared across modes is walked twice without being in
+two places. And the study records a `mode` event, credited as a correct first choice only
+when the answer lives in that mode's exclusive sections — switching when the answer was in a
+shared section all along was not a good move.
+
+Modelling the switcher raised the current scheme's score from 428.9 to 439.9, which is the
+agent switch showing up.
+
+**The report was rewritten for people who did not build it.** It previously led with a
+weighted total and explained itself with `log₂9 + log₂7 > log₂36`, which says nothing to a
+designer. It now leads with average effort per task, states that one point is roughly one
+click, and explains the flat-menu problem in terms of reading a list twice rather than in
+logarithms. Row labels carry their own one-line description instead of relying on the reader
+knowing what directness or a reveal penalty is.
+
+It also now loads results from local storage automatically. Requiring someone to download a
+file and load it back in to see the run they had just completed was a bug in the workflow,
+not a feature of it.

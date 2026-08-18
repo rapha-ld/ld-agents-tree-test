@@ -1,16 +1,33 @@
 ---
 id: current
 name: Current (compact)
+modes:
+  - id: code
+    label: Code
+  - id: agent
+    label: Agents
 notes: >
   Faithful to today's project sidebar with isNavModeSwitcherEnabled and
   isNewCompactNavigationEnabled on, observability entitled, and the Data section
   enabled. Section order and membership come from
   packages/chrome/src/ProjectLayout/ProjectLayout.tsx (mainNavigationSections)
-  and packages/chrome/src/internal/useNavigationSections.ts. Sections are
-  collapsible in this variant, which is why each carries [collapsed].
+  and packages/chrome/src/internal/useNavigationSections.ts.
+
+  The Code / Agents control at the top is NavModeSwitcher. Code is the default
+  unless the URL is already an agent path. In code mode the Agents section is
+  hidden; in agent mode Features is hidden. Everything else is present in both,
+  which is why only those two sections carry a mode. Agent surfaces therefore
+  cost a switch that code surfaces do not.
+
+  Sections are collapsible in this variant, which is why each carries
+  [collapsed].
+
+  Not modelled: in agent mode the Telemetry section also drops Sessions, Errors
+  and Logs. Since those stay reachable from code mode at no switch cost, and cost
+  is the cheapest route, modelling the drop would not change any number.
 ---
 
-# Features [collapsed]
+# Features [collapsed] [mode=code]
 - Flags -> flags
   - Flag detail -> flag
     - Targeting [tab] -> flag.targeting
@@ -57,7 +74,7 @@ notes: >
   - Context kinds -> contexts.kinds
 - Live events -> live
 
-# Agents [collapsed]
+# Agents [collapsed] [mode=agent]
 - Configs -> ai-config
   - Targeting [tab] -> ai-config.targeting
   - Variations [tab] -> ai-config.variations

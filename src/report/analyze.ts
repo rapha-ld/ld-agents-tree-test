@@ -119,9 +119,23 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
       if (!backtracked) for (const a of [acc, schemeAcc]) a.direct += 1;
     }
 
-    const firstClick = ordered.find((e) => e.kind === 'click');
-    if (firstClick) {
-      const node = findByLabels(scheme, firstClick.node_path.split(' / '));
+    const firstNav = ordered.find((e) => e.kind === 'click' || e.kind === 'mode');
+    if (firstNav?.kind === 'mode') {
+      // Reaching for the switcher first is only the right move when the answer
+      // lives in sections exclusive to that mode. If it is in a shared section,
+      // switching was unnecessary.
+      const target = scheme.modes?.find((m) => m.label === firstNav.node_path);
+      if (target) {
+        const reachable = new Set<string>();
+        for (const section of scheme.sections) {
+          if (section.mode === target.id) subtreeIds(section, reachable);
+        }
+        if ([...accepted].some((id) => reachable.has(id))) {
+          for (const a of [acc, schemeAcc]) a.firstClick += 1;
+        }
+      }
+    } else if (firstNav) {
+      const node = findByLabels(scheme, firstNav.node_path.split(' / '));
       if (node) {
         const reachable = subtreeIds(node);
         if ([...accepted].some((id) => reachable.has(id))) {

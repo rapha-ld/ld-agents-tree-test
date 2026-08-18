@@ -22,13 +22,29 @@ export type SchemeNode = {
   reveal: RevealType;
   isSection: boolean;
   depth: number;
+  /**
+   * Set on a section that only appears in one mode of a mode switcher. Null means
+   * the section is present whichever mode is active.
+   */
+  mode: string | null;
   children: SchemeNode[];
+};
+
+/**
+ * A segmented control above the nav that swaps which sections are shown, like
+ * gonfalon's Code / Agents switcher. The first mode is the default, so its
+ * sections cost nothing extra to reach and the others cost a switch.
+ */
+export type SchemeMode = {
+  id: string;
+  label: string;
 };
 
 export type Scheme = {
   id: string;
   name: string;
   notes?: string;
+  modes?: SchemeMode[];
   sections: SchemeNode[];
 };
 

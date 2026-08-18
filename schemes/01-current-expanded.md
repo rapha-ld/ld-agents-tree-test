@@ -1,13 +1,19 @@
 ---
 id: current-expanded
 name: Current (expanded sections)
+modes:
+  - id: code
+    label: Code
+  - id: agent
+    label: Agents
 notes: >
-  Identical tree to the current scheme with every section expanded rather than
-  collapsible. Isolates the cost of hiding a section behind a disclosure, so it acts
-  as a control on the reveal penalty rather than a serious candidate.
+  Identical tree and Code / Agents switcher as the current scheme, with every
+  section expanded rather than collapsible. Isolates the cost of hiding a section
+  behind a disclosure, so it acts as a control on the reveal penalty rather than a
+  serious candidate.
 ---
 
-# Features
+# Features [mode=code]
 - Flags -> flags
   - Flag detail -> flag
     - Targeting [tab] -> flag.targeting
@@ -54,7 +60,7 @@ notes: >
   - Context kinds -> contexts.kinds
 - Live events -> live
 
-# Agents
+# Agents [mode=agent]
 - Configs -> ai-config
   - Targeting [tab] -> ai-config.targeting
   - Variations [tab] -> ai-config.variations

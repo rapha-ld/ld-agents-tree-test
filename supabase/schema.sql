@@ -19,7 +19,7 @@ create table if not exists events (
   scenario_id    text        not null,
   task_index     int         not null,
   seq            int         not null,
-  kind           text        not null check (kind in ('start', 'click', 'back', 'submit', 'giveup')),
+  kind           text        not null check (kind in ('start', 'click', 'back', 'submit', 'giveup', 'mode')),
   node_path      text        not null,
   destination_id text,
   depth          int         not null,

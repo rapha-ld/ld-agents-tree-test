@@ -18,6 +18,11 @@ export type CostParams = {
    */
   overflowBudget: number;
   overflowPenalty: number;
+  /**
+   * Cost of moving a mode switcher off its default. The control itself is always
+   * on screen, so this is small; the real cost is the click plus the scan.
+   */
+  modeSwitch: number;
 };
 
 export const DEFAULT_PARAMS: CostParams = {
@@ -34,6 +39,7 @@ export const DEFAULT_PARAMS: CostParams = {
   gate: 0.5,
   overflowBudget: 12,
   overflowPenalty: 0.15,
+  modeSwitch: 0.25,
 };
 
 export type Placement = {
@@ -42,6 +48,8 @@ export type Placement = {
   /** Cost before the gate penalty, which depends on the destination not the placement. */
   cost: number;
   clicks: number;
+  /** Which switcher mode this route goes through, or null when the scheme has no switcher. */
+  mode: string | null;
 };
 
 /**
@@ -65,24 +73,58 @@ function stepCost(node: SchemeNode, siblings: number, params: CostParams): numbe
   return clickCost(node) + scanCost(siblings, params) + params.reveal[node.reveal];
 }
 
+/** Sections on screen in a given mode. A section with no mode is in every mode. */
+export function sectionsForMode(scheme: Scheme, modeId: string | null): SchemeNode[] {
+  if (!scheme.modes || modeId === null) return scheme.sections;
+  return scheme.sections.filter((s) => s.mode === null || s.mode === modeId);
+}
+
+export function defaultMode(scheme: Scheme): string | null {
+  return scheme.modes?.[0]?.id ?? null;
+}
+
 export function collectPlacements(scheme: Scheme, params: CostParams = DEFAULT_PARAMS): Placement[] {
   const out: Placement[] = [];
 
-  const visit = (node: SchemeNode, inheritedCost: number, inheritedClicks: number, labels: string[], siblings: number) => {
+  const visit = (
+    node: SchemeNode,
+    inheritedCost: number,
+    inheritedClicks: number,
+    labels: string[],
+    siblings: number,
+    mode: string | null,
+  ) => {
     const cost = inheritedCost + stepCost(node, siblings, params);
     const clicks = inheritedClicks + clickCost(node);
     const path = [...labels, node.label];
 
     if (node.destinationId !== null) {
-      out.push({ destinationId: node.destinationId, labels: path, cost, clicks });
+      out.push({ destinationId: node.destinationId, labels: path, cost, clicks, mode });
     }
     for (const child of node.children) {
-      visit(child, cost, clicks, path, node.children.length);
+      visit(child, cost, clicks, path, node.children.length, mode);
     }
   };
 
-  for (const section of scheme.sections) {
-    visit(section, 0, 0, [], scheme.sections.length);
+  if (!scheme.modes) {
+    for (const section of scheme.sections) {
+      visit(section, 0, 0, [], scheme.sections.length, null);
+    }
+    return out;
+  }
+
+  // Each mode is walked separately, because the visible sections and therefore
+  // the top-level scan differ per mode. The default mode costs nothing to be in;
+  // any other mode costs a switch.
+  const fallback = defaultMode(scheme);
+  for (const mode of scheme.modes) {
+    const visible = sectionsForMode(scheme, mode.id);
+    const isDefault = mode.id === fallback;
+    const switchCost = isDefault ? 0 : 1 + scanCost(scheme.modes.length, params) + params.modeSwitch;
+    const switchClicks = isDefault ? 0 : 1;
+    for (const section of visible) {
+      visit(section, switchCost, switchClicks, [], visible.length, mode.id);
+    }
   }
   return out;
 }
@@ -92,6 +134,8 @@ export type DestinationCost = {
   cost: number;
   clicks: number;
   labels: string[];
+  /** Switcher mode the cheapest route goes through, if the scheme has a switcher. */
+  mode: string | null;
   placements: number;
 };
 
@@ -102,29 +146,42 @@ export function destinationCosts(
   params: CostParams = DEFAULT_PARAMS,
 ): Map<string, DestinationCost> {
   const best = new Map<string, DestinationCost>();
+  // A section shared across modes is walked once per mode, which is not the same
+  // thing as being placed twice in the tree. Count distinct label paths so the
+  // duplication metric stays meaningful.
+  const paths = new Map<string, Set<string>>();
 
   for (const p of collectPlacements(scheme, params)) {
     const gated = destinations.get(p.destinationId)?.gated ?? false;
     const total = p.cost + (gated ? params.gate : 0);
-    const existing = best.get(p.destinationId);
 
+    const seen = paths.get(p.destinationId) ?? new Set<string>();
+    seen.add(p.labels.join('\u0000'));
+    paths.set(p.destinationId, seen);
+
+    const existing = best.get(p.destinationId);
     if (!existing) {
       best.set(p.destinationId, {
         destinationId: p.destinationId,
         cost: total,
         clicks: p.clicks,
         labels: p.labels,
+        mode: p.mode,
         placements: 1,
       });
       continue;
     }
 
-    existing.placements += 1;
     if (total < existing.cost) {
       existing.cost = total;
       existing.clicks = p.clicks;
       existing.labels = p.labels;
+      existing.mode = p.mode;
     }
+  }
+
+  for (const [id, entry] of best) {
+    entry.placements = paths.get(id)?.size ?? 1;
   }
 
   return best;
@@ -209,6 +266,12 @@ export type SchemeMetrics = {
   breadth: Array<{ depth: number; mean: number; max: number; groups: number }>;
   scenarios: ScenarioScore[];
   scenarioWeightedTotal: number | null;
+  /** Effort averaged over every task, which is the interpretable headline number. */
+  meanTaskCost: number | null;
+  /** Clicks averaged over every task, for grounding the effort number in something concrete. */
+  meanTaskClicks: number | null;
+  tasksScored: number;
+  tasksUnreachable: number;
 };
 
 function breadthProfile(scheme: Scheme) {
@@ -219,7 +282,11 @@ function breadthProfile(scheme: Scheme) {
     byDepth.set(depth, list);
   };
 
-  push(0, scheme.sections.length);
+  if (scheme.modes) {
+    for (const mode of scheme.modes) push(0, sectionsForMode(scheme, mode.id).length);
+  } else {
+    push(0, scheme.sections.length);
+  }
   const visit = (node: SchemeNode) => {
     if (node.children.length > 0) push(node.depth + 1, node.children.length);
     for (const child of node.children) visit(child);
@@ -244,7 +311,11 @@ export function scoreScheme(
   params: CostParams = DEFAULT_PARAMS,
 ): SchemeMetrics {
   const costs = destinationCosts(scheme, destinations, params);
-  const placements = collectPlacements(scheme, params);
+  // Distinct routes through the tree. A mode scheme is walked once per mode, so
+  // raw placements would overstate it.
+  const placements = new Set(
+    collectPlacements(scheme, params).map((p) => `${p.destinationId}\u0000${p.labels.join('\u0000')}`),
+  );
 
   const proposed = [...costs.keys()].filter((id) => !destinations.has(id)).sort();
   const unreachable = [...destinations.keys()].filter((id) => !costs.has(id)).sort();
@@ -271,11 +342,18 @@ export function scoreScheme(
     ? scenarioScores.reduce((sum, s) => sum + (s.weightedTotal ?? 0), 0)
     : null;
 
+  const allTasks = scenarioScores.flatMap((s) => s.tasks);
+  const reached = allTasks.filter((t) => t.cost !== null);
+  const meanTaskCost = reached.length ? reached.reduce((sum, t) => sum + (t.cost ?? 0), 0) / reached.length : null;
+  const meanTaskClicks = reached.length
+    ? reached.reduce((sum, t) => sum + (t.clicks ?? 0), 0) / reached.length
+    : null;
+
   return {
     schemeId: scheme.id,
     schemeName: scheme.name,
     boundDestinations: costs.size,
-    totalPlacements: placements.length,
+    totalPlacements: placements.size,
     proposed,
     unreachable,
     duplicated,
@@ -286,5 +364,9 @@ export function scoreScheme(
     breadth: breadthProfile(scheme),
     scenarios: scenarioScores,
     scenarioWeightedTotal,
+    meanTaskCost,
+    meanTaskClicks,
+    tasksScored: reached.length,
+    tasksUnreachable: allTasks.length - reached.length,
   };
 }

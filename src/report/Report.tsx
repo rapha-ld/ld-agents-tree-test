@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { destinations, scenarios, schemes, snapshotDate, weights } from '../data';
 import { DEFAULT_PARAMS, scoreScheme, type CostParams } from '../score/cost';
-import { clearLocalResults, exportLocalResults, localResultCount, persistenceMode, REQUIRED_ENV } from '../session';
+import { clearLocalResults, exportLocalResults, localResultCount, persistenceMode } from '../session';
 import { analyze, type ResultsFile, type SchemeOutcome } from './analyze';
 
-const ALPHA_SWEEP = [0, 0.25, 0.5, 0.75, 1, 1.5, 2];
+const ASSUMPTION_SWEEP = [0, 0.25, 0.5, 0.75, 1, 1.5, 2];
 
 function pct(v: number | null) {
   return v === null ? '—' : `${Math.round(v * 100)}%`;
@@ -16,14 +16,31 @@ function secs(ms: number | null) {
   return ms === null ? '—' : `${(ms / 1000).toFixed(1)}s`;
 }
 
+/** A table row whose label carries its own one-line explanation. */
+function Row({ label, hint, children, strong }: { label: string; hint: string; children: ReactNode; strong?: boolean }) {
+  return (
+    <tr className={strong ? 'headline' : undefined}>
+      <th>
+        <span className="rowlabel">{label}</span>
+        <span className="rowhint">{hint}</span>
+      </th>
+      {children}
+    </tr>
+  );
+}
+
 export function Report() {
-  const [alpha, setAlpha] = useState(DEFAULT_PARAMS.alpha);
-  const [overflowPenalty, setOverflowPenalty] = useState(DEFAULT_PARAMS.overflowPenalty);
+  const [readCost, setReadCost] = useState(DEFAULT_PARAMS.alpha);
+  const [offscreenCost, setOffscreenCost] = useState(DEFAULT_PARAMS.overflowPenalty);
   const [detail, setDetail] = useState<string | null>(null);
   const [measured, setMeasured] = useState<SchemeOutcome[] | null>(null);
+  const [measuredFrom, setMeasuredFrom] = useState<'this browser' | 'a file' | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const params: CostParams = useMemo(() => ({ ...DEFAULT_PARAMS, alpha, overflowPenalty }), [alpha, overflowPenalty]);
+  const params: CostParams = useMemo(
+    () => ({ ...DEFAULT_PARAMS, alpha: readCost, overflowPenalty: offscreenCost }),
+    [readCost, offscreenCost],
+  );
 
   const results = useMemo(
     () => schemes.map((s) => scoreScheme(s, destinations, scenarios, weights, params)),
@@ -32,7 +49,7 @@ export function Report() {
 
   const sweep = useMemo(
     () =>
-      ALPHA_SWEEP.map((a) => ({
+      ASSUMPTION_SWEEP.map((a) => ({
         alpha: a,
         scores: schemes.map((s) => scoreScheme(s, destinations, scenarios, weights, { ...params, alpha: a })),
       })),
@@ -44,18 +61,34 @@ export function Report() {
   );
 
   const local = localResultCount();
+  const totalTasks = scenarios.reduce((s, x) => s + x.tasks.length, 0);
+
+  // Anyone who just took the test should see their results without having to
+  // export a file and load it back in.
+  useEffect(() => {
+    if (measuredFrom === 'a file') return;
+    try {
+      const parsed = JSON.parse(exportLocalResults()) as ResultsFile;
+      const outcomes = analyze(parsed, schemes, scenarios);
+      setMeasured(outcomes.length > 0 ? outcomes : null);
+      setMeasuredFrom(outcomes.length > 0 ? 'this browser' : null);
+    } catch {
+      setMeasured(null);
+      setMeasuredFrom(null);
+    }
+  }, [measuredFrom]);
 
   const loadResults = async (file: File) => {
     setLoadError(null);
     try {
       const parsed = JSON.parse(await file.text()) as ResultsFile;
       if (!Array.isArray(parsed.sessions) || !Array.isArray(parsed.events)) {
-        throw new Error('Expected an object with `sessions` and `events` arrays');
+        throw new Error('Expected a file with a list of sessions and a list of events');
       }
       setMeasured(analyze(parsed, schemes, scenarios));
+      setMeasuredFrom('a file');
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
-      setMeasured(null);
     }
   };
 
@@ -71,53 +104,77 @@ export function Report() {
   return (
     <div className="report">
       <header>
-        <h1>Scheme comparison</h1>
+        <h1>Menu comparison</h1>
         <p className="muted">
-          {destinations.size} destinations (snapshot {snapshotDate}) · {schemes.length} schemes · {scenarios.length}{' '}
-          scenarios, {scenarios.reduce((s, x) => s + x.tasks.length, 0)} tasks
+          {schemes.length} menus, scored against {scenarios.length} scenarios made of {totalTasks} tasks. Page list taken
+          from the product on {snapshotDate}: {destinations.size} places you can get to.
         </p>
       </header>
 
-      <section className="callout">
-        <h3>Read the predicted numbers with this in mind</h3>
+      <section className="explainer">
+        <h3>What the numbers mean</h3>
         <p>
-          The cost model measures <strong>structural effort to reach a destination once you know where it is</strong>.
-          It does not model whether a label tells you where to look. That is what the study measures, and it is the
-          larger part of whether a navigation scheme works.
+          Every number in the top table is an <strong>effort score</strong>. One point is roughly one click. Fractions
+          get added for the things that make a click harder than a click: a long menu is more to read than a short one,
+          an item tucked inside a collapsed section or a fly-out needs an extra action to reveal, and a feature only some
+          accounts can see is invisible to everyone else.
         </p>
         <p>
-          A consequence worth knowing: under a pure logarithmic scan term, a completely flat menu always wins, because
-          splitting one scan into two stages costs more total scanning than one large scan
-          (log&#8322;9 + log&#8322;7 &gt; log&#8322;36) while adding a traversal step. Hick's law assumes every choice is
-          visible at once, which stops being true past the fold. The overflow penalty below corrects for that. Set it to
-          zero to see the uncorrected model, and watch <code>flat</code> take the lead.
+          So three clicks through short menus scores a little over three. The same three clicks through long menus, with
+          a collapsed section on the way, scores five or six. <strong>Lower is better.</strong>
+        </p>
+        <p>
+          <strong>Average effort per task</strong> is the number to look at first, because it is on a scale you can hold
+          in your head. <strong>Overall score</strong> adds up all {scenarios.length} scenarios and counts the more
+          important ones more heavily, so it is only useful for comparing one column against another. On its own it means
+          nothing.
+        </p>
+      </section>
+
+      <section className="explainer caution">
+        <h3>Two things to know before trusting it</h3>
+        <p>
+          <strong>This score only measures getting there, not finding it.</strong> It assumes you already know which item
+          to click. It says nothing about whether the label would lead you to the right place in the first place, which
+          is usually the bigger problem. That is what the test measures, further down this page.
+        </p>
+        <p>
+          <strong>A single long list can look deceptively good.</strong> Grouping a list means reading twice, once to
+          pick the group and once inside it, plus an extra click. Add that up and one long list of everything can beat a
+          tidy set of groups, which is not how people behave once a list runs off the bottom of the screen. So we charge
+          extra for each item past the twelfth. Drag the second slider to zero and watch{' '}
+          <strong>{schemes.find((s) => s.id === 'flat')?.name ?? 'the flat menu'}</strong> jump to first place. That is
+          the assumption doing the work, and it is worth knowing it is there.
         </p>
       </section>
 
       <section className="controls">
         <label>
-          Scan weight &alpha;: <strong>{alpha.toFixed(2)}</strong>
-          <input type="range" min={0} max={2} step={0.05} value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} />
+          How much reading a menu costs: <strong>{readCost.toFixed(2)}</strong>
+          <input type="range" min={0} max={2} step={0.05} value={readCost} onChange={(e) => setReadCost(Number(e.target.value))} />
+          <span className="hint">Higher means long menus are punished more.</span>
         </label>
         <label>
-          Overflow penalty per item past {DEFAULT_PARAMS.overflowBudget}: <strong>{overflowPenalty.toFixed(2)}</strong>
+          Extra cost per item that does not fit on screen: <strong>{offscreenCost.toFixed(2)}</strong>
           <input
             type="range"
             min={0}
             max={0.5}
             step={0.01}
-            value={overflowPenalty}
-            onChange={(e) => setOverflowPenalty(Number(e.target.value))}
+            value={offscreenCost}
+            onChange={(e) => setOffscreenCost(Number(e.target.value))}
           />
+          <span className="hint">Applies past {DEFAULT_PARAMS.overflowBudget} items in one list. Zero ignores the screen entirely.</span>
         </label>
       </section>
 
-      <h2>Predicted</h2>
+      <h2>Predicted effort</h2>
+      <p className="muted">Calculated from the menu structure. No people involved.</p>
       <div className="scroll">
         <table>
           <thead>
             <tr>
-              <th>metric</th>
+              <th>&nbsp;</th>
               {results.map((r) => (
                 <th key={r.schemeId} className={r.schemeId === best.schemeId ? 'best' : undefined}>
                   {r.schemeName}
@@ -126,28 +183,31 @@ export function Report() {
             </tr>
           </thead>
           <tbody>
-            <tr className="headline">
-              <th>scenario cost (weighted)</th>
+            <Row label="Average effort per task" hint="roughly, how many clicks' worth of work each task takes" strong>
+              {results.map((r) => (
+                <td key={r.schemeId} className={r.schemeId === best.schemeId ? 'best' : undefined}>
+                  {num(r.meanTaskCost)}
+                </td>
+              ))}
+            </Row>
+            <Row label="Average clicks per task" hint="just the clicks, ignoring how hard each one is">
+              {results.map((r) => (
+                <td key={r.schemeId}>{num(r.meanTaskClicks, 1)}</td>
+              ))}
+            </Row>
+            <Row label="Overall score" hint="all scenarios added up, important ones counted more; compare columns only">
               {results.map((r) => (
                 <td key={r.schemeId} className={r.schemeId === best.schemeId ? 'best' : undefined}>
                   {num(r.scenarioWeightedTotal, 1)}
                 </td>
               ))}
-            </tr>
-            <tr>
-              <th>mean cost per destination</th>
+            </Row>
+            <Row label="Average effort for any page" hint="across all 169 pages the menu reaches, not just the tested ones">
               {results.map((r) => (
                 <td key={r.schemeId}>{num(r.meanCost)}</td>
               ))}
-            </tr>
-            <tr>
-              <th>traffic-weighted mean</th>
-              {results.map((r) => (
-                <td key={r.schemeId}>{num(r.weightedMeanCost)}</td>
-              ))}
-            </tr>
-            <tr>
-              <th>worst case</th>
+            </Row>
+            <Row label="Hardest page to reach" hint="the single worst case, and which page it is">
               {results.map((r) => (
                 <td key={r.schemeId}>
                   {r.worstCase ? (
@@ -159,53 +219,57 @@ export function Report() {
                   )}
                 </td>
               ))}
-            </tr>
-            <tr>
-              <th>destinations placed</th>
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.boundDestinations}</td>
-              ))}
-            </tr>
-            <tr>
-              <th>duplicated</th>
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.duplicated.length}</td>
-              ))}
-            </tr>
-            <tr>
-              <th>unreachable from nav</th>
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.unreachable.length}</td>
-              ))}
-            </tr>
-            <tr>
-              <th>proposed, not in snapshot</th>
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.proposed.length}</td>
-              ))}
-            </tr>
-            <tr>
-              <th>top-level items</th>
+            </Row>
+            <Row label="Items in the top level" hint="what you see before clicking anything">
               {results.map((r) => (
                 <td key={r.schemeId}>{r.breadth[0]?.max ?? 0}</td>
               ))}
-            </tr>
-            <tr>
-              <th>widest level</th>
+            </Row>
+            <Row label="Most choices on one screen" hint="the busiest list anywhere in the menu">
               {results.map((r) => (
                 <td key={r.schemeId}>{Math.max(...r.breadth.map((b) => b.max))}</td>
               ))}
-            </tr>
+            </Row>
+            <Row label="Pages the menu reaches" hint="should match across menus, otherwise the comparison is unfair">
+              {results.map((r) => (
+                <td key={r.schemeId}>{r.boundDestinations}</td>
+              ))}
+            </Row>
+            <Row label="Pages in two places at once" hint="helps people find things, muddies the structure">
+              {results.map((r) => (
+                <td key={r.schemeId}>{r.duplicated.length}</td>
+              ))}
+            </Row>
+            <Row label="Pages not in the menu" hint="normal: most pages are reached by opening an item, not from the menu">
+              {results.map((r) => (
+                <td key={r.schemeId}>{r.unreachable.length}</td>
+              ))}
+            </Row>
+            <Row label="Pages that do not exist yet" hint="invented by a proposed menu; nothing to compare them against">
+              {results.map((r) => (
+                <td key={r.schemeId}>{r.proposed.length}</td>
+              ))}
+            </Row>
+            {Object.keys(weights).length > 0 ? (
+              <Row label="Effort weighted by how often pages are used" hint="from real traffic">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{num(r.weightedMeanCost)}</td>
+                ))}
+              </Row>
+            ) : null}
           </tbody>
         </table>
       </div>
 
-      <h2>Scenario cost</h2>
+      <h2>Effort by scenario</h2>
+      <p className="muted">
+        Each scenario is one job someone came to do, split into tasks. The lowest number in each row is highlighted.
+      </p>
       <div className="scroll">
         <table>
           <thead>
             <tr>
-              <th>scenario</th>
+              <th>Scenario</th>
               {results.map((r) => (
                 <th key={r.schemeId}>{r.schemeName}</th>
               ))}
@@ -219,12 +283,16 @@ export function Report() {
               return (
                 <tr key={scenario.id}>
                   <th>
-                    {scenario.id} <span className="muted small">w={scenario.weight}</span>
+                    <span className="rowlabel">{scenario.persona}</span>
+                    <span className="rowhint">
+                      {scenario.tasks.length} tasks
+                      {scenario.weight !== 1 ? ` · counted ${scenario.weight}× in the overall score` : ''}
+                    </span>
                   </th>
                   {cells.map((c, i) => (
                     <td key={results[i].schemeId} className={c?.total !== null && c?.total === min ? 'best' : undefined}>
                       {c?.total === null ? (
-                        <span className="warn">unreachable ({c.unreachableTasks.length})</span>
+                        <span className="warn">can&rsquo;t get there</span>
                       ) : (
                         num(c?.total ?? null)
                       )}
@@ -237,16 +305,17 @@ export function Report() {
         </table>
       </div>
 
-      <h2>Ranking stability across &alpha;</h2>
+      <h2>Does the winner hold up?</h2>
       <p className="muted">
-        A winner that survives the whole sweep is a real result. A winner that only leads at one &alpha; is an artefact
-        of the parameter.
+        The same comparison run with the &ldquo;how much reading costs&rdquo; setting turned all the way down and all the
+        way up. A menu that leads every row is genuinely ahead. One that only leads in the middle is winning because of
+        the setting, not because it is better.
       </p>
       <div className="scroll">
         <table>
           <thead>
             <tr>
-              <th>&alpha;</th>
+              <th>Reading cost</th>
               {schemes.map((s) => (
                 <th key={s.id}>{s.name}</th>
               ))}
@@ -259,7 +328,7 @@ export function Report() {
               );
               return (
                 <tr key={row.alpha}>
-                  <th>{row.alpha}</th>
+                  <th>{row.alpha === 0 ? 'none (0)' : row.alpha}</th>
                   {row.scores.map((r) => (
                     <td key={r.schemeId} className={r.schemeId === leader.schemeId ? 'best' : undefined}>
                       {num(r.scenarioWeightedTotal, 1)}
@@ -272,35 +341,80 @@ export function Report() {
         </table>
       </div>
 
-      <h2>Measured</h2>
+      <h2>What people actually did</h2>
       {persistenceMode === 'local' ? (
-        <div className="callout warnbox">
-          <h3>No study database is connected</h3>
-          <p>
-            This is a fallback, not a setting. Results stay in whichever browser took the study, so a participant on
-            their own machine keeps their answers there and you would have to ask them to export the file.
+        <p className="muted">Database not connected. Results are being saved locally.</p>
+      ) : null}
+
+      {measured && measured.length > 0 ? (
+        <>
+          <p className="muted">
+            From {measuredFrom}. Only completed runs count, so an abandoned or restarted run is ignored. These numbers
+            matter more than the predicted ones: if people find things easily in a menu the score calls hard work, trust
+            the people.
           </p>
-          <p>
-            To connect one, set <code>{REQUIRED_ENV[0]}</code> and <code>{REQUIRED_ENV[1]}</code> and restart the dev
-            server. The README has the steps.
-          </p>
-          <p>
-            This browser holds <strong>{local.sessions}</strong> session(s), <strong>{local.finished}</strong> finished,
-            and <strong>{local.events}</strong> event(s). Only finished runs are counted below.
-          </p>
-        </div>
+          <div className="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>&nbsp;</th>
+                  {measured.map((m) => (
+                    <th key={m.schemeId}>{schemes.find((s) => s.id === m.schemeId)?.name ?? m.schemeId}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <Row label="People tested" hint="one menu each, so they are never compared unfairly">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{m.sessions}</td>
+                  ))}
+                </Row>
+                <Row label="Tasks attempted" hint="people multiplied by tasks">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{m.attempts}</td>
+                  ))}
+                </Row>
+                <Row label="Found the right place" hint="ended up somewhere we would accept as correct" strong>
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{pct(m.successRate)}</td>
+                  ))}
+                </Row>
+                <Row label="Went straight there" hint="found it without going back to try somewhere else" strong>
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{pct(m.directnessRate)}</td>
+                  ))}
+                </Row>
+                <Row label="First choice was on the right track" hint="their very first click could have led to the answer">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{pct(m.firstClickRate)}</td>
+                  ))}
+                </Row>
+                <Row label="Gave up" hint="said they would not know where to look">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{pct(m.giveupRate)}</td>
+                  ))}
+                </Row>
+                <Row label="Typical time per task" hint="the middle of the range, not the average">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{secs(m.medianMs)}</td>
+                  ))}
+                </Row>
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : (
         <p className="muted">
-          Connected to the study database. Rows insert as participants go. Export from Supabase and load the JSON here
-          to see measured results. This browser also holds {local.finished} finished run(s) of its own.
+          Nobody has finished a test yet. <a href="#/study">Take one</a> and the results will appear here.
         </p>
       )}
+
       <div className="actions">
         <button onClick={download} disabled={local.sessions === 0}>
-          Download local results
+          Download results
         </button>
         <label className="filebtn">
-          Load results JSON
+          Load a results file
           <input
             type="file"
             accept="application/json"
@@ -315,79 +429,20 @@ export function Report() {
           onClick={() => {
             clearLocalResults();
             setMeasured(null);
+            setMeasuredFrom(null);
           }}
           disabled={local.sessions === 0}
         >
-          Clear local results
+          Clear results from this browser
         </button>
       </div>
       {loadError ? <p className="warn">Could not read that file: {loadError}</p> : null}
 
-      {measured && measured.length > 0 ? (
-        <div className="scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>metric</th>
-                {measured.map((m) => (
-                  <th key={m.schemeId}>{schemes.find((s) => s.id === m.schemeId)?.name ?? m.schemeId}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th>participants</th>
-                {measured.map((m) => (
-                  <td key={m.schemeId}>{m.sessions}</td>
-                ))}
-              </tr>
-              <tr>
-                <th>task attempts</th>
-                {measured.map((m) => (
-                  <td key={m.schemeId}>{m.attempts}</td>
-                ))}
-              </tr>
-              <tr className="headline">
-                <th>success rate</th>
-                {measured.map((m) => (
-                  <td key={m.schemeId}>{pct(m.successRate)}</td>
-                ))}
-              </tr>
-              <tr className="headline">
-                <th>directness</th>
-                {measured.map((m) => (
-                  <td key={m.schemeId}>{pct(m.directnessRate)}</td>
-                ))}
-              </tr>
-              <tr>
-                <th>first click correct</th>
-                {measured.map((m) => (
-                  <td key={m.schemeId}>{pct(m.firstClickRate)}</td>
-                ))}
-              </tr>
-              <tr>
-                <th>gave up</th>
-                {measured.map((m) => (
-                  <td key={m.schemeId}>{pct(m.giveupRate)}</td>
-                ))}
-              </tr>
-              <tr>
-                <th>median time per task</th>
-                {measured.map((m) => (
-                  <td key={m.schemeId}>{secs(m.medianMs)}</td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="muted">
-          No measured results loaded. Directness is the metric to compare against predicted cost; regressing one on the
-          other is what calibrates &alpha; and the reveal penalties.
-        </p>
-      )}
-
-      <h2>Shortest paths</h2>
+      <h2>How someone would get there</h2>
+      <p className="muted">
+        The cheapest route to each task in one menu, so you can sanity-check the numbers above against the actual
+        clicks.
+      </p>
       <div className="tabs">
         {results.map((r) => (
           <button
@@ -405,34 +460,28 @@ export function Report() {
             .map((r) => (
               <div key={r.schemeId} className="detail">
                 {r.proposed.length > 0 ? (
-                  <p className="warn">
-                    Proposed destinations not in the snapshot: {r.proposed.join(', ')}. These carry no weight until one
-                    is assigned.
-                  </p>
+                  <p className="warn">Pages this menu invents, which do not exist in the product: {r.proposed.join(', ')}</p>
                 ) : null}
                 {r.duplicated.length > 0 ? (
                   <p className="muted">
-                    Duplicated: {r.duplicated.map((d) => `${d.destinationId} (${d.placements}x)`).join(', ')}
+                    Listed in more than one place: {r.duplicated.map((d) => `${d.destinationId} (${d.placements}×)`).join(', ')}
                   </p>
                 ) : null}
                 {r.scenarios.map((s) => (
                   <div key={s.scenarioId} className="scenario-detail">
-                    <h4>
-                      {s.scenarioId} <span className="muted small">{s.persona}</span>
-                    </h4>
+                    <h4>{s.persona}</h4>
                     <ol>
                       {s.tasks.map((t) => (
                         <li key={t.prompt}>
                           {t.cost === null ? (
-                            <span className="warn">unreachable: {t.prompt}</span>
+                            <span className="warn">no route to this: {t.prompt}</span>
                           ) : (
                             <>
-                              <strong>{num(t.cost)}</strong>{' '}
-                              <span className="muted small">
-                                {t.clicks} {t.clicks === 1 ? 'click' : 'clicks'}
-                              </span>{' '}
                               {t.prompt}
-                              <div className="path">{t.labels?.join('  ›  ')}</div>
+                              <div className="path">
+                                {t.labels?.join('  ›  ')} &mdash; {t.clicks} {t.clicks === 1 ? 'click' : 'clicks'},
+                                effort {num(t.cost)}
+                              </div>
                             </>
                           )}
                         </li>

@@ -1,26 +1,60 @@
-import { REVEAL_TYPES, type RevealType, type Scheme, type SchemeNode } from './types';
+import { REVEAL_TYPES, type RevealType, type Scheme, type SchemeMode, type SchemeNode } from './types';
 import { splitFrontmatter } from './frontmatter';
 
 const SECTION_RE = /^#\s+(.*)$/;
 const BULLET_RE = /^(\s*)-\s+(.*)$/;
 
-function parseLabelPart(rest: string): { label: string; reveal: RevealType; destinationId: string | null } {
+type LabelPart = { label: string; reveal: RevealType; mode: string | null; destinationId: string | null };
+
+/**
+ * Parses `Label [collapsed] [mode=code] -> destination.id`. Bracket groups may
+ * appear in any order and any number; `mode=` names a switcher mode, anything
+ * else is a reveal type.
+ */
+function parseLabelPart(rest: string, modeIds: Set<string>): LabelPart {
   const arrow = rest.indexOf('->');
   const left = arrow === -1 ? rest : rest.slice(0, arrow);
   const right = arrow === -1 ? '' : rest.slice(arrow + 2).trim();
 
-  const modMatch = /\[([a-zA-Z]+)\]/.exec(left);
   let reveal: RevealType = 'visible';
-  if (modMatch) {
-    const candidate = modMatch[1].toLowerCase();
-    if (!(REVEAL_TYPES as readonly string[]).includes(candidate)) {
-      throw new Error(`Unknown reveal modifier [${modMatch[1]}]. Expected one of: ${REVEAL_TYPES.join(', ')}`);
+  let mode: string | null = null;
+
+  for (const match of left.matchAll(/\[([a-zA-Z]+)(?:=([a-zA-Z0-9_-]+))?\]/g)) {
+    const name = match[1].toLowerCase();
+    if (name === 'mode') {
+      const value = match[2];
+      if (!value) throw new Error('[mode] needs a value, for example [mode=code]');
+      if (!modeIds.has(value)) {
+        throw new Error(`Unknown mode "${value}". Declare it under \`modes\` in the frontmatter.`);
+      }
+      mode = value;
+      continue;
     }
-    reveal = candidate as RevealType;
+    if (!(REVEAL_TYPES as readonly string[]).includes(name)) {
+      throw new Error(`Unknown reveal modifier [${match[1]}]. Expected one of: ${REVEAL_TYPES.join(', ')}, or mode=`);
+    }
+    reveal = name as RevealType;
   }
 
-  const label = left.replace(/\[[a-zA-Z]+\]/, '').trim();
-  return { label, reveal, destinationId: right === '' ? null : right };
+  const label = left.replace(/\[[a-zA-Z]+(?:=[a-zA-Z0-9_-]+)?\]/g, '').trim();
+  return { label, reveal, mode, destinationId: right === '' ? null : right };
+}
+
+function parseModes(raw: unknown, filename: string): SchemeMode[] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw)) throw new Error(`${filename}: \`modes\` must be a list`);
+  const modes = raw.map((entry, i) => {
+    if (typeof entry !== 'object' || entry === null) {
+      throw new Error(`${filename}: modes[${i}] must have an id and a label`);
+    }
+    const { id, label } = entry as { id?: unknown; label?: unknown };
+    if (typeof id !== 'string' || typeof label !== 'string') {
+      throw new Error(`${filename}: modes[${i}] must have a string id and label`);
+    }
+    return { id, label };
+  });
+  if (modes.length < 2) throw new Error(`${filename}: a mode switcher needs at least two modes`);
+  return modes;
 }
 
 export function parseScheme(src: string, filename = '<scheme>'): Scheme {
@@ -29,6 +63,9 @@ export function parseScheme(src: string, filename = '<scheme>'): Scheme {
   const name = typeof data.name === 'string' ? data.name : undefined;
   if (!id) throw new Error(`${filename}: scheme frontmatter is missing \`id\``);
   if (!name) throw new Error(`${filename}: scheme frontmatter is missing \`name\``);
+
+  const modes = parseModes(data.modes, filename);
+  const modeIds = new Set(modes?.map((m) => m.id) ?? []);
 
   const sections: SchemeNode[] = [];
   // stack[d] is the node currently open at depth d.
@@ -41,8 +78,8 @@ export function parseScheme(src: string, filename = '<scheme>'): Scheme {
 
     const sectionMatch = SECTION_RE.exec(line);
     if (sectionMatch) {
-      const { label, reveal, destinationId } = parseLabelPart(sectionMatch[1]);
-      const node: SchemeNode = { label, destinationId, reveal, isSection: true, depth: 0, children: [] };
+      const { label, reveal, mode, destinationId } = parseLabelPart(sectionMatch[1], modeIds);
+      const node: SchemeNode = { label, destinationId, reveal, mode, isSection: true, depth: 0, children: [] };
       sections.push(node);
       stack.length = 0;
       stack[0] = node;
@@ -64,8 +101,11 @@ export function parseScheme(src: string, filename = '<scheme>'): Scheme {
       throw new Error(`${filename}:${i + 1}: bullet is indented past its parent`);
     }
 
-    const { label, reveal, destinationId } = parseLabelPart(bulletMatch[2]);
-    const node: SchemeNode = { label, destinationId, reveal, isSection: false, depth, children: [] };
+    const { label, reveal, mode, destinationId } = parseLabelPart(bulletMatch[2], modeIds);
+    if (mode !== null) {
+      throw new Error(`${filename}:${i + 1}: [mode=] is only valid on a \`#\` section`);
+    }
+    const node: SchemeNode = { label, destinationId, reveal, mode: null, isSection: false, depth, children: [] };
     parent.children.push(node);
     stack.length = depth;
     stack[depth] = node;
@@ -73,5 +113,19 @@ export function parseScheme(src: string, filename = '<scheme>'): Scheme {
 
   if (sections.length === 0) throw new Error(`${filename}: scheme has no \`#\` sections`);
 
-  return { id, name, ...(typeof data.notes === 'string' ? { notes: data.notes } : {}), sections };
+  if (modes) {
+    const used = new Set(sections.map((s) => s.mode).filter((m): m is string => m !== null));
+    const unused = modes.filter((m) => !used.has(m.id));
+    if (unused.length > 0) {
+      throw new Error(`${filename}: mode(s) ${unused.map((m) => m.id).join(', ')} have no sections`);
+    }
+  }
+
+  return {
+    id,
+    name,
+    ...(typeof data.notes === 'string' ? { notes: data.notes } : {}),
+    ...(modes ? { modes } : {}),
+    sections,
+  };
 }

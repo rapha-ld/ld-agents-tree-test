@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { scenarios, schemes } from '../data';
+import { defaultMode, sectionsForMode } from '../score/cost';
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
   persistenceMode,
-  REQUIRED_ENV,
   saveEvents,
   saveSession,
   type EventKind,
@@ -51,6 +51,7 @@ export function Study() {
   const [label, setLabel] = useState('');
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [saveIssue, setSaveIssue] = useState<string | null>(null);
+  const [mode, setMode] = useState<string | null>(null);
 
   const sessionId = useRef<string>(crypto.randomUUID());
   const seq = useRef(0);
@@ -65,7 +66,7 @@ export function Study() {
     (
       kind: EventKind,
       node?: SchemeNode,
-      at?: { scenarioId?: string; taskIndex?: number; trail?: SchemeNode[] },
+      at?: { scenarioId?: string; taskIndex?: number; trail?: SchemeNode[]; nodePath?: string },
     ) => {
       const scenarioId = at?.scenarioId ?? scenario?.id;
       if (!scenarioId) return;
@@ -77,7 +78,7 @@ export function Study() {
         task_index: at?.taskIndex ?? taskIndex,
         seq: seq.current,
         kind,
-        node_path: [...path, ...(node ? [node] : [])].map((n) => n.label).join(' / '),
+        node_path: at?.nodePath ?? [...path, ...(node ? [node] : [])].map((n) => n.label).join(' / '),
         destination_id: node?.destinationId ?? null,
         depth: path.length + (node ? 1 : 0),
         ts: new Date().toISOString(),
@@ -95,15 +96,13 @@ export function Study() {
     if (result.remote === 'failed') {
       setSaveIssue(
         result.local
-          ? `Could not reach the study database: ${result.error ?? 'unknown error'}. Your answers are still saved in this browser.`
-          : `Could not save your answers: ${result.error ?? 'unknown error'}. Nothing has been stored.`,
+          ? 'Database not connected. Your answers are being saved locally.'
+          : 'Your answers are not being saved. Please tell whoever is running this study.',
       );
       return;
     }
     if (!result.local && result.remote === 'skipped') {
-      setSaveIssue(
-        'This browser is refusing to store results, and no study database is configured, so nothing is being saved.',
-      );
+      setSaveIssue('Your answers are not being saved. Please tell whoever is running this study.');
     }
   }, []);
 
@@ -128,6 +127,7 @@ export function Study() {
   const start = async () => {
     const resolved = resolveScheme(choice);
     setScheme(resolved);
+    setMode(defaultMode(resolved));
     sessionStart.current = Date.now();
     taskStart.current = Date.now();
     noteSave(await saveSession(session(resolved.id, false)));
@@ -146,6 +146,7 @@ export function Study() {
     setConfirmRestart(false);
     setSaveIssue(null);
     setScheme(null);
+    setMode(null);
     setOrder(shuffled(scenarios));
     setScenarioIndex(0);
     setTaskIndex(0);
@@ -200,6 +201,14 @@ export function Study() {
     void advance('submit', node);
   };
 
+  const switchMode = (next: string) => {
+    if (next === mode) return;
+    const label = scheme?.modes?.find((m) => m.id === next)?.label ?? next;
+    record('mode', undefined, { trail: [], nodePath: label });
+    setMode(next);
+    setTrail([]);
+  };
+
   const goBack = () => {
     record('back');
     setTrail((t) => t.slice(0, -1));
@@ -211,10 +220,8 @@ export function Study() {
     [order, scenarioIndex, taskIndex],
   );
 
-  const saveBanner = saveIssue ? (
-    <div className="save-issue" role="alert">
-      <strong>Answers are not reaching the database.</strong> {saveIssue}
-    </div>
+  const saveNotice = saveIssue ? (
+    <p className="save-notice">{saveIssue}</p>
   ) : null;
 
   const restartBar = confirmRestart ? (
@@ -237,8 +244,8 @@ export function Study() {
 
   if (phase === 'intro' || !scheme) {
     return (
-      <div className="card">
-        {saveBanner}
+      <>
+        <div className="card">
         <h1>Navigation study</h1>
         <p>
           You will be given a series of short tasks. For each one, click through the menu to where you would expect to
@@ -266,25 +273,23 @@ export function Study() {
           <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="optional" />
         </label>
 
+        {persistenceMode === 'local' ? (
+          <p className="muted small">Database not connected. Results are being saved locally.</p>
+        ) : null}
+
         <button className="primary" onClick={() => void start()}>
           Start
         </button>
-        {persistenceMode === 'supabase' ? (
-          <p className="muted small">Results are saved to the study database.</p>
-        ) : (
-          <p className="muted small">
-            No study database is connected, so results stay in this browser and only whoever is sitting here can export
-            them. Set {REQUIRED_ENV.join(' and ')} to change that.
-          </p>
-        )}
-      </div>
+        </div>
+        {saveNotice}
+      </>
     );
   }
 
   if (phase === 'scenario' && scenario) {
     return (
-      <div className="card">
-        {saveBanner}
+      <>
+        <div className="card">
         {restartBar}
         <p className="muted small">
           Scenario {scenarioIndex + 1} of {order.length}
@@ -300,15 +305,17 @@ export function Study() {
         <button className="primary" onClick={beginTask}>
           Continue
         </button>
-      </div>
+        </div>
+        {saveNotice}
+      </>
     );
   }
 
   if (phase === 'task' && task) {
-    const level = trail.length === 0 ? scheme.sections : trail[trail.length - 1].children;
+    const level = trail.length === 0 ? sectionsForMode(scheme, mode) : trail[trail.length - 1].children;
     return (
-      <div className="study">
-        {saveBanner}
+      <>
+        <div className="study">
         {restartBar}
         <div className="progress">
           <div className="bar" style={{ width: `${(doneTasks / totalTasks) * 100}%` }} />
@@ -317,6 +324,22 @@ export function Study() {
           Task {doneTasks + 1} of {totalTasks}
         </p>
         <h2 className="prompt">{task.prompt}</h2>
+
+        {scheme.modes ? (
+          <div className="modes" role="radiogroup" aria-label="Navigation mode">
+            {scheme.modes.map((m) => (
+              <button
+                key={m.id}
+                role="radio"
+                aria-checked={m.id === mode}
+                className={m.id === mode ? 'modetab active' : 'modetab'}
+                onClick={() => switchMode(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <nav className="crumbs" aria-label="Where you are">
           <button
@@ -374,13 +397,15 @@ export function Study() {
             I would not know where to look
           </button>
         </div>
-      </div>
+        </div>
+        {saveNotice}
+      </>
     );
   }
 
   return (
-    <div className="card">
-      {saveBanner}
+    <>
+      <div className="card">
       <h1>Done</h1>
       {saveIssue ? (
         <p>
@@ -390,13 +415,9 @@ export function Study() {
       ) : (
         <p>Thank you. Your answers are recorded.</p>
       )}
-      {saveIssue ? null : (
-        <p className="muted small">
-          {persistenceMode === 'supabase'
-            ? 'Saved to the study database.'
-            : 'Saved in this browser, because no study database is connected. Whoever is running the study can export them from the report page.'}
-        </p>
-      )}
+      {saveIssue === null && persistenceMode === 'local' ? (
+        <p className="muted small">Database not connected. Results are saved locally.</p>
+      ) : null}
       <div className="actions">
         <button className="primary" onClick={restart}>
           Run it again
@@ -405,6 +426,8 @@ export function Study() {
           See the report
         </a>
       </div>
-    </div>
+      </div>
+      {saveNotice}
+    </>
   );
 }

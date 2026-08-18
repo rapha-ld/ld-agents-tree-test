@@ -68,6 +68,43 @@ name: Observability first
   Omit for a directly visible item.
 - `name` is what the study and report display, so it is the one place to change if you
   want to obscure which scheme is which.
+
+### Mode switchers
+
+Some menus put a segmented control above everything that swaps which sections are shown.
+Gonfalon has one today: Code and Agents. Declare the modes in the frontmatter and tag the
+sections that belong to only one of them.
+
+```md
+---
+id: current
+name: Current (compact)
+modes:
+  - id: code
+    label: Code
+  - id: agent
+    label: Agents
+---
+
+# Features [collapsed] [mode=code]
+- Flags -> flags
+
+# Agents [collapsed] [mode=agent]
+- Configs -> ai-config
+
+# Telemetry [collapsed]
+- Errors -> errors
+```
+
+The first mode listed is the default, so its sections cost nothing extra to reach. Any
+other mode costs a click on the control plus a glance at it. A section with no `[mode=]`
+is present whichever mode is active, which is why Telemetry above needs no tag.
+
+This matters because it is not the same as making Code and Agents two ordinary top-level
+items. With a switcher, someone in the default mode sees the code sections already opened
+out beneath the control; the agent sections only appear once they realise the control is
+there and use it. Bracket groups can be combined and appear in any order, so a section can
+be both collapsible and mode-scoped.
 - Binding the same destination twice is legal. Duplication is counted and reported.
 - Binding an id that is not in the snapshot is legal too. Candidate schemes are
   expected to invent destinations; they are reported as proposed rather than as errors.
@@ -99,7 +136,23 @@ targets: experiments.new
 `targets` are fully correct answers. `accept` are answers you would also count, which
 is how you avoid punishing someone for stopping at a sensible parent.
 
-## The cost model
+## The effort score
+
+Every number in the report's top table is an effort score. **One point is roughly one
+click.** Fractions get added for the things that make a click harder than a click:
+
+- a long menu is more to read than a short one
+- an item inside a collapsed section, a fly-out, or an overflow menu needs an extra action
+  to reveal
+- a feature only some accounts can see is invisible to everyone else
+
+Three clicks through short menus scores a little over three. The same three clicks through
+long menus with a collapsed section on the way scores five or six. Lower is better.
+
+`pnpm score` prints the same numbers in the terminal. `--scheme=<id>` adds the click-by-click
+route for each task, `--sweep` shows whether the winner survives changing the assumptions.
+
+### The formula
 
 For a path through nodes n₁..nₖ:
 
@@ -107,33 +160,31 @@ For a path through nodes n₁..nₖ:
 cost = Σᵢ [ click(nᵢ) + α·log₂(siblingsᵢ + 1) + overflow(siblingsᵢ) + reveal(typeᵢ) ] + gate
 ```
 
-- `click` is 1, except for an unbound directly-visible container, whose children are
-  already on screen, where it is 0.
-- `α` defaults to 0.5. This is the breadth-versus-depth dial.
-- `overflow` charges `0.15` per peer beyond 12, because Hick's law assumes every choice
-  is visible at once and that stops being true past the fold.
-- `reveal`: visible 0, tab 0.25, collapsed 0.5, filter and switcher 0.75, flyout 1.0,
-  overflow menu 1.5.
-- `gate` adds 0.5 once when the destination is behind an entitlement or a flag.
+- `click` is 1, except for an unbound group heading whose children are already on screen.
+- `α` defaults to 0.5. It sets how much reading a menu costs.
+- `overflow` charges 0.15 per item past 12 in one list.
+- `reveal`: visible 0, tab 0.25, collapsed 0.5, filter and switcher 0.75, fly-out 1.0,
+  overflow menu 1.5. Moving a mode switcher off its default adds 0.25 plus a click.
+- `gate` adds 0.5 once when only some accounts can see the destination.
 
-Duplicated destinations take the cheapest path, and the duplication count is reported
+Duplicated destinations take the cheapest route, and the duplication count is reported
 separately rather than folded into the score.
 
-### What the model cannot tell you
+### Two limits worth knowing
 
-It measures structural effort to reach a destination **once you already know where it
-is**. It says nothing about whether a label helps you guess. That is the larger part of
-whether navigation works, and it is what the tree test measures.
+**It only measures getting there, not finding it.** The score assumes you already know
+which item to click. It says nothing about whether the label would lead you to the right
+place, which is usually the bigger problem. That is what the study measures.
 
-One consequence is worth understanding before quoting any number. Under a pure
-logarithmic scan term a completely flat menu always wins, because splitting one scan
-into two stages costs more total scanning than one large scan
-(log₂9 + log₂7 > log₂36) while also adding a traversal step. The overflow term is what
-stops that. Set `overflowPenalty` to 0 in the report and watch `flat` take the lead.
+**A single long list can look deceptively good.** Grouping a list means reading twice, once
+to pick the group and once inside it, plus an extra click. Add that up and one long list of
+everything beats a tidy set of groups — which is not how people behave once a list runs off
+the bottom of the screen. The overflow charge is what corrects for that. Set it to zero in
+the report and the flat menu takes first place.
 
-So: use the model to catch things buried too deep, to compare schemes of similar shape,
-and to check coverage. Do not use it to settle breadth versus depth. Run
-`pnpm score --sweep` and trust only rankings that hold across the whole range of α.
+So use the score to catch things buried too deep, to compare menus of similar shape, and to
+check that a menu reaches everything. Do not use it to settle whether grouping is worth it.
+Run `pnpm score --sweep` and trust only a winner that leads every row.
 
 ## Running a study
 

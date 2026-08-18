@@ -39,7 +39,6 @@
 }
 .globalnav nav a:hover { background: #f2f3f8; }
 .globalnav nav a.active { background: var(--ink); color: #fff; }
-.globalnav .navhint { color: var(--muted); font-size: 0.85rem; }
 
 body {
   margin: 0;
@@ -84,7 +83,6 @@ code { background: #f0f1f5; padding: 0.1em 0.35em; border-radius: 3px; font-size
   border: 1px solid var(--line);
   border-radius: 6px;
 }
-.field .hint { display: block; margin-top: 0.35rem; font-size: 0.82rem; line-height: 1.4; }
 
 /* --- start over ------------------------------------------------------------ */
 
@@ -138,6 +136,25 @@ button.ghost:hover { color: var(--ink); }
 .progress { height: 3px; background: var(--line); border-radius: 2px; margin-bottom: 1rem; }
 .progress .bar { height: 3px; background: var(--accent); border-radius: 2px; transition: width 160ms ease; }
 
+.modes {
+  display: inline-flex;
+  gap: 0.15rem;
+  margin-bottom: 0.85rem;
+  padding: 0.15rem;
+  background: #f0f1f5;
+  border-radius: 7px;
+}
+.modetab {
+  border: none;
+  background: none;
+  border-radius: 5px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.modetab:hover { color: var(--ink); }
+.modetab.active { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+
 .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem; margin-bottom: 0.75rem; font-size: 0.85rem; }
 .crumb { border: none; background: none; padding: 0.15rem 0.2rem; color: var(--accent); }
 .crumb:disabled { color: var(--muted); opacity: 1; }
@@ -166,31 +183,34 @@ button.ghost:hover { color: var(--ink); }
 .report { max-width: 78rem; margin: 2rem auto; padding: 0 1.5rem 5rem; }
 .report header { margin-bottom: 1.5rem; }
 
-.callout {
-  padding: 1rem 1.25rem;
-  background: #fff8e8;
-  border: 1px solid #f0e0b8;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
+.save-notice {
+  max-width: 34rem;
+  margin: -2rem auto 3rem;
+  padding: 0 2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
-.callout p { margin: 0.5rem 0 0; font-size: 0.9rem; }
-.callout.warnbox { background: #fdf1ee; border-color: #efc9c0; }
-
-.save-issue {
-  margin-bottom: 1rem;
-  padding: 0.7rem 0.85rem;
-  background: #fdf1ee;
-  border: 1px solid #efc9c0;
-  border-left: 3px solid var(--warn);
-  border-radius: 6px;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-.save-issue strong { color: var(--warn); }
 
 .controls { display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 1rem; }
-.controls label { font-size: 0.85rem; color: var(--muted); }
-.controls input[type='range'] { display: block; width: 15rem; margin-top: 0.3rem; }
+.controls label { font-size: 0.85rem; color: var(--muted); max-width: 18rem; }
+.controls input[type='range'] { display: block; width: 15rem; margin: 0.3rem 0; }
+.controls .hint { display: block; font-size: 0.8rem; line-height: 1.4; }
+
+.explainer {
+  padding: 1rem 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  max-width: 52rem;
+}
+.explainer p { margin: 0.5rem 0 0; font-size: 0.9rem; }
+.explainer.caution { background: #fff8e8; border-color: #f0e0b8; }
+
+.rowlabel { display: block; }
+.rowhint { display: block; color: var(--muted); font-size: 0.78rem; font-weight: 400; line-height: 1.35; white-space: normal; }
+tbody th { max-width: 22rem; }
 
 .scroll { overflow-x: auto; }
 
