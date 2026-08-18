@@ -16,7 +16,7 @@ function session(id: string, schemeId = 'demo'): StudySession {
     participant_label: null,
     scheme_id: schemeId,
     started_at: '2026-08-18T00:00:00.000Z',
-    finished_at: null,
+    finished_at: '2026-08-18T00:10:00.000Z',
     user_agent: 'test',
   };
 }
@@ -111,6 +111,20 @@ describe('analyze', () => {
     const [outcome] = analyze(results, [topLevel], [scenario]);
     expect(outcome.successRate).toBe(1);
     expect(outcome.firstClickRate).toBe(1);
+  });
+
+  it('excludes a session that was restarted before finishing', () => {
+    seq = 0;
+    const abandoned: StudySession = { ...session('s-quit'), finished_at: null };
+    const results: ResultsFile = {
+      sessions: [abandoned],
+      events: [
+        event('s-quit', 'start', '', null, 0),
+        event('s-quit', 'click', 'A', null, 300),
+        event('s-quit', 'submit', 'A / X / Y', 'y', 800),
+      ],
+    };
+    expect(analyze(results, [scheme], [scenario])).toEqual([]);
   });
 
   it('ignores events whose session or scenario is unknown', () => {

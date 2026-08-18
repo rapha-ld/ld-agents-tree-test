@@ -87,6 +87,9 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
     const session = sessionById.get(sessionId);
     const scenario = scenarioById.get(scenarioId);
     if (!session || !scenario) continue;
+    // Only completed runs count. A participant who restarts leaves an unfinished
+    // session behind, and its answers should not be mixed into the results.
+    if (!session.finished_at) continue;
     const scheme = schemeById.get(session.scheme_id);
     if (!scheme) continue;
 

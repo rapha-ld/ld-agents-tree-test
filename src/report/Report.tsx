@@ -71,13 +71,10 @@ export function Report() {
   return (
     <div className="report">
       <header>
-        <h1>nav-lab</h1>
+        <h1>Scheme comparison</h1>
         <p className="muted">
           {destinations.size} destinations (snapshot {snapshotDate}) · {schemes.length} schemes · {scenarios.length}{' '}
           scenarios, {scenarios.reduce((s, x) => s + x.tasks.length, 0)} tasks
-        </p>
-        <p>
-          <a href="#/study">Open the study &rarr;</a>
         </p>
       </header>
 
@@ -123,7 +120,7 @@ export function Report() {
               <th>metric</th>
               {results.map((r) => (
                 <th key={r.schemeId} className={r.schemeId === best.schemeId ? 'best' : undefined}>
-                  {r.schemeId}
+                  {r.schemeName}
                 </th>
               ))}
             </tr>
@@ -210,7 +207,7 @@ export function Report() {
             <tr>
               <th>scenario</th>
               {results.map((r) => (
-                <th key={r.schemeId}>{r.schemeId}</th>
+                <th key={r.schemeId}>{r.schemeName}</th>
               ))}
             </tr>
           </thead>
@@ -251,7 +248,7 @@ export function Report() {
             <tr>
               <th>&alpha;</th>
               {schemes.map((s) => (
-                <th key={s.id}>{s.id}</th>
+                <th key={s.id}>{s.name}</th>
               ))}
             </tr>
           </thead>
@@ -317,7 +314,7 @@ export function Report() {
               <tr>
                 <th>metric</th>
                 {measured.map((m) => (
-                  <th key={m.schemeId}>{m.schemeId}</th>
+                  <th key={m.schemeId}>{schemes.find((s) => s.id === m.schemeId)?.name ?? m.schemeId}</th>
                 ))}
               </tr>
             </thead>
@@ -382,7 +379,7 @@ export function Report() {
             className={detail === r.schemeId ? 'tab active' : 'tab'}
             onClick={() => setDetail(detail === r.schemeId ? null : r.schemeId)}
           >
-            {r.schemeId}
+            {r.schemeName}
           </button>
         ))}
       </div>

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { destinations, scenarios, schemes } from '../data';
+import { scenarios, schemes } from '../data';
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
   persistenceMode,
@@ -10,7 +10,9 @@ import {
   type StudySession,
 } from '../session';
 
-/** Fisher-Yates, seeded off Math.random. Scenario order varies per participant. */
+const RANDOM = 'random';
+
+/** Fisher-Yates. Scenario order varies per participant. */
 function shuffled<T>(items: T[]): T[] {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i--) {
@@ -20,26 +22,32 @@ function shuffled<T>(items: T[]): T[] {
   return out;
 }
 
-function pickScheme(): { scheme: Scheme; forced: boolean } {
-  const params = new URLSearchParams(window.location.search);
-  const wanted = params.get('scheme');
-  const found = wanted ? schemes.find((s) => s.id === wanted) : undefined;
-  if (found) return { scheme: found, forced: true };
+function initialChoice(): string {
+  const wanted = new URLSearchParams(window.location.search).get('scheme');
+  return wanted && schemes.some((s) => s.id === wanted) ? wanted : RANDOM;
+}
+
+function resolveScheme(choice: string): Scheme {
+  const found = schemes.find((s) => s.id === choice);
+  if (found) return found;
   // Uniform random assignment: the insert-only table gives the client no way to
   // read existing counts and balance them.
-  return { scheme: schemes[Math.floor(Math.random() * schemes.length)], forced: false };
+  return schemes[Math.floor(Math.random() * schemes.length)];
 }
 
 type Phase = 'intro' | 'scenario' | 'task' | 'done';
 
 export function Study() {
-  const [{ scheme, forced }] = useState(pickScheme);
-  const [order] = useState(() => shuffled(scenarios));
+  const [choice, setChoice] = useState(initialChoice);
+  // Resolved when the run starts, so picking Random gives a fresh draw each time.
+  const [scheme, setScheme] = useState<Scheme | null>(null);
+  const [order, setOrder] = useState<Scenario[]>(() => shuffled(scenarios));
   const [phase, setPhase] = useState<Phase>('intro');
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [taskIndex, setTaskIndex] = useState(0);
   const [trail, setTrail] = useState<SchemeNode[]>([]);
   const [label, setLabel] = useState('');
+  const [confirmRestart, setConfirmRestart] = useState(false);
 
   const sessionId = useRef<string>(crypto.randomUUID());
   const seq = useRef(0);
@@ -49,8 +57,6 @@ export function Study() {
 
   const scenario: Scenario | undefined = order[scenarioIndex];
   const task = scenario?.tasks[taskIndex];
-
-  const level = trail.length === 0 ? scheme.sections : trail[trail.length - 1].children;
 
   const record = useCallback(
     (
@@ -84,22 +90,42 @@ export function Study() {
   }, []);
 
   const session = useCallback(
-    (finished: boolean): StudySession => ({
+    (schemeId: string, finished: boolean): StudySession => ({
       id: sessionId.current,
       participant_label: label.trim() === '' ? null : label.trim(),
-      scheme_id: scheme.id,
+      scheme_id: schemeId,
       started_at: new Date(sessionStart.current).toISOString(),
       finished_at: finished ? new Date().toISOString() : null,
       user_agent: navigator.userAgent,
     }),
-    [label, scheme.id],
+    [label],
   );
 
   const start = async () => {
+    const resolved = resolveScheme(choice);
+    setScheme(resolved);
     sessionStart.current = Date.now();
     taskStart.current = Date.now();
-    await saveSession(session(false));
+    await saveSession(session(resolved.id, false));
     setPhase('scenario');
+  };
+
+  /**
+   * Abandon this run and go back to the start. The new run gets its own session
+   * id; only sessions that reach the end are counted, so the abandoned rows do
+   * not pollute the results.
+   */
+  const restart = () => {
+    pending.current = [];
+    seq.current = 0;
+    sessionId.current = crypto.randomUUID();
+    setConfirmRestart(false);
+    setScheme(null);
+    setOrder(shuffled(scenarios));
+    setScenarioIndex(0);
+    setTaskIndex(0);
+    setTrail([]);
+    setPhase('intro');
   };
 
   const beginTask = () => {
@@ -127,7 +153,7 @@ export function Study() {
 
       const isLastScenario = scenarioIndex + 1 >= order.length;
       if (isLastScenario) {
-        await saveSession(session(true));
+        if (scheme) await saveSession(session(scheme.id, true));
         setPhase('done');
         return;
       }
@@ -137,7 +163,7 @@ export function Study() {
       seq.current = 0;
       setPhase('scenario');
     },
-    [flush, order.length, record, scenario?.tasks.length, scenarioIndex, session, taskIndex],
+    [flush, order.length, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
   );
 
   const choose = (node: SchemeNode) => {
@@ -160,7 +186,25 @@ export function Study() {
     [order, scenarioIndex, taskIndex],
   );
 
-  if (phase === 'intro') {
+  const restartBar = confirmRestart ? (
+    <div className="restart-confirm">
+      <span>Start over from the beginning? This run&rsquo;s answers are discarded.</span>
+      <span className="confirm-actions">
+        <button onClick={restart}>Yes, start over</button>
+        <button className="ghost" onClick={() => setConfirmRestart(false)}>
+          Keep going
+        </button>
+      </span>
+    </div>
+  ) : (
+    <div className="restart-bar">
+      <button className="ghost small-btn" onClick={() => setConfirmRestart(true)}>
+        Start over
+      </button>
+    </div>
+  );
+
+  if (phase === 'intro' || !scheme) {
     return (
       <div className="card">
         <h1>Navigation study</h1>
@@ -175,17 +219,34 @@ export function Study() {
         <p className="muted">
           {totalTasks} tasks across {order.length} scenarios. About 10 minutes.
         </p>
+
+        <label className="field">
+          Which menu to test
+          <select value={choice} onChange={(e) => setChoice(e.target.value)}>
+            <option value={RANDOM}>Pick one at random</option>
+            {schemes.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <span className="hint">
+            {choice === RANDOM
+              ? 'Random is the right choice for a real study, because it keeps participants from being compared unfairly.'
+              : 'Choose Random instead if you are collecting results you want to compare across menus.'}
+          </span>
+        </label>
+
         <label className="field">
           Name or initials (optional)
           <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="optional" />
         </label>
+
         <button className="primary" onClick={() => void start()}>
           Start
         </button>
         <p className="muted small">
-          Scheme: {scheme.name}
-          {forced ? ' (forced by URL)' : ' (randomly assigned)'} &middot; results are saved{' '}
-          {persistenceMode === 'supabase' ? 'to the study database' : 'in this browser'}
+          Results are saved {persistenceMode === 'supabase' ? 'to the study database' : 'in this browser'}.
         </p>
       </div>
     );
@@ -194,6 +255,7 @@ export function Study() {
   if (phase === 'scenario' && scenario) {
     return (
       <div className="card">
+        {restartBar}
         <p className="muted small">
           Scenario {scenarioIndex + 1} of {order.length}
         </p>
@@ -213,8 +275,10 @@ export function Study() {
   }
 
   if (phase === 'task' && task) {
+    const level = trail.length === 0 ? scheme.sections : trail[trail.length - 1].children;
     return (
       <div className="study">
+        {restartBar}
         <div className="progress">
           <div className="bar" style={{ width: `${(doneTasks / totalTasks) * 100}%` }} />
         </div>
@@ -224,7 +288,14 @@ export function Study() {
         <h2 className="prompt">{task.prompt}</h2>
 
         <nav className="crumbs" aria-label="Where you are">
-          <button className="crumb" onClick={() => { record('back'); setTrail([]); }} disabled={trail.length === 0}>
+          <button
+            className="crumb"
+            onClick={() => {
+              record('back');
+              setTrail([]);
+            }}
+            disabled={trail.length === 0}
+          >
             Top level
           </button>
           {trail.map((node, i) => (
@@ -285,9 +356,14 @@ export function Study() {
           ? 'Saved to the study database.'
           : 'Saved in this browser. Whoever is running the study can export them from the report page.'}
       </p>
-      <p className="muted small">
-        Destinations in the snapshot: {destinations.size}. Scheme shown: {scheme.name}.
-      </p>
+      <div className="actions">
+        <button className="primary" onClick={restart}>
+          Run it again
+        </button>
+        <a className="linkbtn" href="#/report">
+          See the report
+        </a>
+      </div>
     </div>
   );
 }

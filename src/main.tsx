@@ -14,10 +14,35 @@ function useHashRoute() {
   return hash;
 }
 
+function GlobalNav({ view }: { view: 'study' | 'report' }) {
+  return (
+    <header className="globalnav">
+      <span className="brand">nav-lab</span>
+      <nav aria-label="Sections">
+        <a href="#/study" className={view === 'study' ? 'active' : undefined} aria-current={view === 'study'}>
+          Study
+        </a>
+        <a href="#/report" className={view === 'report' ? 'active' : undefined} aria-current={view === 'report'}>
+          Report
+        </a>
+      </nav>
+      <span className="navhint">
+        {view === 'study' ? 'Take a navigation test' : 'Compare menus and see results'}
+      </span>
+    </header>
+  );
+}
+
 function App() {
   const hash = useHashRoute();
   // The report is the operator's view; anything else is what a participant sees.
-  return hash.startsWith('#/report') ? <Report /> : <Study />;
+  const view = hash.startsWith('#/report') ? 'report' : 'study';
+  return (
+    <>
+      <GlobalNav view={view} />
+      {view === 'report' ? <Report /> : <Study />}
+    </>
+  );
 }
 
 createRoot(document.getElementById('root')!).render(

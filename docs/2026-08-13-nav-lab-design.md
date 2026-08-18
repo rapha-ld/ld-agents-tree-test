@@ -429,3 +429,23 @@ singularising the collection; and a param following an already-singular segment 
 per-scenario shortest paths, `--alpha=` to override the scan weight, and `--sweep` to
 show ranking stability. The design assumed the browser report would be the only view,
 but the terminal is where scheme authoring actually happens.
+
+## Follow-up changes
+
+Added after the first review, when it became clear non-technical colleagues would use
+the tool without reading the README.
+
+**A global nav bar.** Study and Report are both reachable from a persistent header
+rather than only by knowing the `#/report` fragment.
+
+**Scheme selection on the start screen.** A dropdown listing each scheme's `name`,
+defaulting to random assignment with a hint explaining why random is correct for a real
+study. Displaying `name` rather than `id` means obscuring a scheme is a one-line
+frontmatter edit, so participants need not see which option is today's navigation. The
+report shows names for the same reason.
+
+**Start over.** Available on every screen during a run, behind an inline confirmation.
+It issues a fresh session id, and `analyze` now ignores sessions with no `finished_at`,
+so an abandoned run cannot contribute answers to the results. This was a latent
+correctness problem rather than only a convenience: without it, a restarted run would
+have double-counted a participant's completed tasks.

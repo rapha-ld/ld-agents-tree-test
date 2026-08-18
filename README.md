@@ -66,6 +66,8 @@ name: Observability first
 - A `#` heading may be bound, which is how a flat scheme with no groups is written.
 - Reveal modifiers: `tab`, `collapsed`, `flyout`, `overflow`, `filter`, `switcher`.
   Omit for a directly visible item.
+- `name` is what the study and report display, so it is the one place to change if you
+  want to obscure which scheme is which.
 - Binding the same destination twice is legal. Duplication is counted and reported.
 - Binding an id that is not in the snapshot is legal too. Candidate schemes are
   expected to invent destinations; they are reported as proposed rather than as errors.
@@ -135,10 +137,27 @@ and to check coverage. Do not use it to settle breadth versus depth. Run
 
 ## Running a study
 
-`pnpm dev` serves the participant view at `/` and the operator report at `/#/report`.
+`pnpm dev` serves the app. A nav bar across the top switches between the two views,
+so nothing is hidden behind a URL you have to know:
 
-- Each participant is assigned one scheme at random, so there are no learning effects.
-- `?scheme=<id>` forces a scheme for a dry run.
+- **Study** is what a participant takes.
+- **Report** compares the schemes and shows results.
+
+On the start screen, **Which menu to test** picks the scheme. It lists the `name` from
+each scheme's frontmatter, so renaming a scheme to something neutral like `Menu A` is a
+one-line edit and participants never see which one is today's navigation. Leave it on
+*Pick one at random* for real studies: random assignment is what keeps schemes
+comparable, and the hint under the dropdown says so.
+
+**Start over** sits at the top of every screen during a run. It asks for confirmation,
+then returns to the start screen with a fresh session. The abandoned run is left
+unfinished, and only finished runs are counted, so restarting never pollutes results.
+If you are exporting from Supabase by hand, filter to `finished_at is not null` for the
+same reason.
+
+Other behaviour:
+
+- `?scheme=<id>` preselects a scheme, which is handy for a link you hand to someone.
 - Scenario order is randomised per participant.
 - Labels only. No content, no correctness feedback, and an explicit
   "I would not know where to look" on every task.
