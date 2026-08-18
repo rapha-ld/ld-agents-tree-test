@@ -496,3 +496,25 @@ knowing what directness or a reveal penalty is.
 It also now loads results from local storage automatically. Requiring someone to download a
 file and load it back in to see the run they had just completed was a bug in the workflow,
 not a feature of it.
+
+## Mode-scoped items, and time as a first-class metric
+
+**Items can be mode-scoped, not just sections.** I had originally dismissed today's
+behaviour of dropping Sessions, Errors and Logs from Telemetry in agent mode, on the grounds
+that it could not change any cost: those pages stay reachable from the default mode for
+free, and cost takes the cheapest route. That reasoning was correct and beside the point.
+The study is meant to show participants what they would really see, and someone in agent
+mode who opens Telemetry looking for Sessions needs to genuinely not find it, because that
+confusion is a finding. Mode tags therefore work on items, sibling counts are computed from
+what is visible in the active mode, and an item whose mode contradicts its section is an
+error rather than a silently invisible node.
+
+**Time is now reported alongside effort.** It was already recorded per task and thrown away
+except for a single median. The report gains a How long it took section with per-scenario
+medians, a whole-run median, and per-task times shown next to the predicted effort for the
+same task. The reason to separate the two is that they can disagree: a flat list can win on
+clicks and lose on reading time, and a menu that wins on effort while losing badly on time
+is not obviously the better menu. Medians throughout, so one participant who walked away
+cannot move a column.
+
+Participants still see no timer.

@@ -394,9 +394,14 @@ export function Report() {
                     <td key={m.schemeId}>{pct(m.giveupRate)}</td>
                   ))}
                 </Row>
-                <Row label="Typical time per task" hint="the middle of the range, not the average">
+                <Row label="Typical time per task" hint="the middle of the range, so one slow person cannot skew it" strong>
                   {measured.map((m) => (
                     <td key={m.schemeId}>{secs(m.medianMs)}</td>
+                  ))}
+                </Row>
+                <Row label="Typical time for the whole set" hint="one participant working through every task">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{secs(m.medianRunMs)}</td>
                   ))}
                 </Row>
               </tbody>
@@ -408,6 +413,58 @@ export function Report() {
           Nobody has finished a test yet. <a href="#/study">Take one</a> and the results will appear here.
         </p>
       )}
+
+      {measured && measured.length > 0 ? (
+        <>
+          <h2>How long it took</h2>
+          <p className="muted">
+            Time is a separate question from effort. A flat list can score well on effort and still be slower, because a
+            long list takes longer to read even when it takes fewer clicks. Times are medians, so someone who wandered off
+            mid-task cannot drag a column. The fastest time in each row is highlighted.
+          </p>
+          <div className="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Scenario</th>
+                  {measured.map((m) => (
+                    <th key={m.schemeId}>{schemes.find((s) => s.id === m.schemeId)?.name ?? m.schemeId}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {scenarios.map((scenario) => {
+                  const cells = measured.map((m) => m.scenarioOutcomes.find((o) => o.scenarioId === scenario.id));
+                  const times = cells.map((c) => c?.medianMs).filter((v): v is number => typeof v === 'number');
+                  const fastest = times.length ? Math.min(...times) : null;
+                  if (times.length === 0) return null;
+                  return (
+                    <tr key={scenario.id}>
+                      <th>
+                        <span className="rowlabel">{scenario.persona}</span>
+                        <span className="rowhint">
+                          {cells
+                            .map((c) => (c ? `${c.successes}/${c.attempts} found` : null))
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
+                      </th>
+                      {cells.map((c, i) => (
+                        <td
+                          key={measured[i].schemeId}
+                          className={c?.medianMs !== null && c?.medianMs === fastest ? 'best' : undefined}
+                        >
+                          {secs(c?.medianMs ?? null)}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : null}
 
       <div className="actions">
         <button onClick={download} disabled={local.sessions === 0}>
@@ -481,6 +538,13 @@ export function Report() {
                               <div className="path">
                                 {t.labels?.join('  ›  ')} &mdash; {t.clicks} {t.clicks === 1 ? 'click' : 'clicks'},
                                 effort {num(t.cost)}
+                                {(() => {
+                                  const outcome = measured
+                                    ?.find((m) => m.schemeId === r.schemeId)
+                                    ?.tasks.find((x) => x.prompt === t.prompt);
+                                  if (!outcome || outcome.medianMs === null) return null;
+                                  return `, took ${secs(outcome.medianMs)} (${outcome.successes}/${outcome.attempts} found it)`;
+                                })()}
                               </div>
                             </>
                           )}

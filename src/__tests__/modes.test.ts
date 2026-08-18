@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { parseScheme } from '../parse/scheme';
 import { parseScenario } from '../parse/scenario';
 import type { Destination } from '../parse/types';
-import { DEFAULT_PARAMS, defaultMode, destinationCosts, scoreScheme, sectionsForMode } from '../score/cost';
+import {
+  DEFAULT_PARAMS,
+  defaultMode,
+  destinationCosts,
+  scoreScheme,
+  sectionsForMode,
+  visibleChildren,
+} from '../score/cost';
 import type { StudyEvent, StudySession } from '../session';
 import { analyze, type ResultsFile } from '../report/analyze';
 
@@ -64,10 +71,17 @@ describe('mode switcher parsing', () => {
     expect(() => parseScheme([...HEAD, '# X [mode=nope]', '- A -> a'].join('\n'))).toThrow(/Unknown mode "nope"/);
   });
 
-  it('rejects [mode] on a bullet, since the switcher only scopes sections', () => {
-    expect(() => parseScheme([...HEAD, '# F [mode=code]', '- Flags [mode=agent] -> flags'].join('\n'))).toThrow(
-      /only valid on a `#` section/,
+  it('rejects an item whose mode contradicts its section, since it could never be seen', () => {
+    expect(() => parseScheme([...HEAD, '# F [mode=code]', '- Flags [mode=agent] -> flags', '# A [mode=agent]', '- C -> c'].join('\n'))).toThrow(
+      /can never be seen/,
     );
+  });
+
+  it('counts an item-level mode when checking that every mode is used', () => {
+    const s = parseScheme(
+      [...HEAD, '# Features [mode=code]', '- Flags -> flags', '# Telemetry', '- Insights [mode=agent] -> ai'].join('\n'),
+    );
+    expect(s.sections[1].children[0].mode).toBe('agent');
   });
 
   it('rejects a switcher with fewer than two modes', () => {
@@ -175,5 +189,61 @@ describe('mode switcher in the results analysis', () => {
     const [outcome] = analyze(results, [scheme], [shared]);
     expect(outcome.successRate).toBe(1);
     expect(outcome.firstClickRate).toBe(0);
+  });
+});
+
+
+describe('mode-scoped items', () => {
+  // Mirrors today's Telemetry: the section is in both modes, but Sessions,
+  // Errors and Logs disappear in agent mode.
+  const scheme = parseScheme(
+    [
+      ...HEAD,
+      '# Features [mode=code]',
+      '- Flags -> flags',
+      '# Agents [mode=agent]',
+      '- Configs -> configs',
+      '# Telemetry',
+      '- Sessions [mode=code] -> sessions',
+      '- Errors [mode=code] -> errors',
+      '- Alerts -> alerts',
+    ].join('\n'),
+  );
+  const telemetry = scheme.sections[2];
+  const ds = new Map(
+    ['sessions', 'errors', 'alerts', 'flags', 'configs'].map((id) => [
+      id,
+      { id, label: id, routePattern: null, kind: 'route' as const, owner: null, gated: false, source: 'generated' as const },
+    ]),
+  );
+
+  it('hides code-only items when the agent mode is active', () => {
+    expect(visibleChildren(telemetry, 'code').map((c) => c.label)).toEqual(['Sessions', 'Errors', 'Alerts']);
+    expect(visibleChildren(telemetry, 'agent').map((c) => c.label)).toEqual(['Alerts']);
+  });
+
+  it('returns every child when the scheme has no switcher at all', () => {
+    expect(visibleChildren(telemetry, null).map((c) => c.label)).toHaveLength(3);
+  });
+
+  it('scans only what is on screen, so the shared item is cheaper in agent mode', () => {
+    const costs = destinationCosts(scheme, ds);
+    // Alerts is reachable in both modes. Agent mode shows one item in Telemetry
+    // rather than three, but costs a switch, so code mode still wins overall.
+    expect(costs.get('alerts')!.mode).toBe('code');
+    expect(costs.get('alerts')!.cost).toBeCloseTo(scan(2) + 1 + scan(3), 10);
+  });
+
+  it('reaches a code-only item without a switch', () => {
+    const costs = destinationCosts(scheme, ds);
+    expect(costs.get('sessions')!.mode).toBe('code');
+    expect(costs.get('sessions')!.clicks).toBe(1);
+  });
+
+  it('reports the narrower agent-mode list in the breadth profile', () => {
+    const metrics = scoreScheme(scheme, ds, []);
+    const level1 = metrics.breadth.find((b) => b.depth === 1)!;
+    // Telemetry contributes 3 in code mode and 1 in agent mode.
+    expect(level1.max).toBe(3);
   });
 });

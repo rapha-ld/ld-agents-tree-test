@@ -104,11 +104,11 @@ notes: >
   - Events -> product-analytics.events
 
 # Telemetry
-- Sessions -> sessions
+- Sessions [mode=code] -> sessions
   - Session detail -> session
-- Errors -> errors
+- Errors [mode=code] -> errors
   - Error detail -> error
-- Logs -> logs
+- Logs [mode=code] -> logs
 - Traces -> traces
 - Observability metrics -> observability-metrics
 - Alerts -> alerts

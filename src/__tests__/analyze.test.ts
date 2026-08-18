@@ -136,6 +136,54 @@ describe('analyze', () => {
     expect(analyze(results, [scheme], [scenario])).toEqual([]);
   });
 
+  it('reports per-scenario and whole-run time as medians across participants', () => {
+    seq = 0;
+    // Two participants on the same menu. One takes 1s on the task, the other 3s.
+    const results: ResultsFile = {
+      sessions: [session('a'), session('b')],
+      events: [
+        event('a', 'start', '', null, 0),
+        event('a', 'submit', 'A / X / Y', 'y', 1000),
+        event('b', 'start', '', null, 0),
+        event('b', 'submit', 'A / X / Y', 'y', 3000),
+      ],
+    };
+    const [outcome] = analyze(results, [scheme], [scenario]);
+    expect(outcome.medianMs).toBe(2000);
+    // One task per scenario here, so the scenario total equals the task time and
+    // the median across the two participants is the midpoint.
+    expect(outcome.scenarioOutcomes).toHaveLength(1);
+    expect(outcome.scenarioOutcomes[0].medianMs).toBe(2000);
+    expect(outcome.scenarioOutcomes[0].successes).toBe(2);
+    expect(outcome.medianRunMs).toBe(2000);
+  });
+
+  it('sums a participant\'s tasks into one scenario time rather than averaging them', () => {
+    seq = 0;
+    const twoTasks = parseScenario(
+      '---\nid: s1\npersona: p\n---\n## Find Y\ntargets: y\n\n## Find Y again\ntargets: y\n',
+    );
+    const second = (kind: StudyEvent['kind'], nodePath: string, destId: string | null, ms: number): StudyEvent => ({
+      ...event('a', kind, nodePath, destId, ms),
+      task_index: 1,
+    });
+    const results: ResultsFile = {
+      sessions: [session('a')],
+      events: [
+        event('a', 'start', '', null, 0),
+        event('a', 'submit', 'A / X / Y', 'y', 1000),
+        second('start', '', null, 5000),
+        second('submit', 'A / X / Y', 'y', 7000),
+      ],
+    };
+    const [outcome] = analyze(results, [scheme], [twoTasks]);
+    // 1s on the first task plus 2s on the second.
+    expect(outcome.scenarioOutcomes[0].medianMs).toBe(3000);
+    expect(outcome.medianRunMs).toBe(3000);
+    // The per-task median is still per task, not the total.
+    expect(outcome.medianMs).toBe(1500);
+  });
+
   it('drops a task with no terminal event, since it was abandoned mid-flight', () => {
     seq = 0;
     const results: ResultsFile = {

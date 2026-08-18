@@ -33,6 +33,15 @@ export type TaskOutcome = {
   medianMs: number | null;
 };
 
+export type ScenarioOutcome = {
+  scenarioId: string;
+  persona: string;
+  attempts: number;
+  successes: number;
+  /** Median of each participant's total time across this scenario's tasks. */
+  medianMs: number | null;
+};
+
 export type SchemeOutcome = {
   schemeId: string;
   sessions: number;
@@ -42,7 +51,10 @@ export type SchemeOutcome = {
   firstClickRate: number | null;
   giveupRate: number | null;
   medianMs: number | null;
+  /** Median time for one participant to get through every scenario. */
+  medianRunMs: number | null;
   tasks: TaskOutcome[];
+  scenarioOutcomes: ScenarioOutcome[];
 };
 
 function median(values: number[]): number | null {
@@ -73,6 +85,11 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
   type Acc = { attempts: number; successes: number; direct: number; firstClick: number; giveups: number; times: number[] };
   const bySchemeTask = new Map<string, Acc>();
   const bySchemeSessions = new Map<string, Set<string>>();
+  // Time is worth reporting on its own: a flat menu can score well on effort and
+  // still be slower to read. Totals are per participant so they can be medianed
+  // rather than summed across people.
+  const scenarioTime = new Map<string, number>(); // scheme|scenario|session -> ms
+  const runTime = new Map<string, number>(); // scheme|session -> ms
 
   const accFor = (map: Map<string, Acc>, key: string) => {
     const existing = map.get(key);
@@ -149,7 +166,13 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
 
     if (start) {
       const ms = new Date(terminal.ts).getTime() - new Date(start.ts).getTime();
-      if (Number.isFinite(ms) && ms >= 0) for (const a of [acc, schemeAcc]) a.times.push(ms);
+      if (Number.isFinite(ms) && ms >= 0) {
+        for (const a of [acc, schemeAcc]) a.times.push(ms);
+        const sKey = `${scheme.id}|${scenarioId}|${sessionId}`;
+        scenarioTime.set(sKey, (scenarioTime.get(sKey) ?? 0) + ms);
+        const rKey = `${scheme.id}|${sessionId}`;
+        runTime.set(rKey, (runTime.get(rKey) ?? 0) + ms);
+      }
     }
   }
 
@@ -176,6 +199,38 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
           });
         });
       }
+      const scenarioOutcomes: ScenarioOutcome[] = scenarios
+        .map((scenario) => {
+          const perSession: number[] = [];
+          for (const [key, ms] of scenarioTime) {
+            const [schemeId, scenarioId] = key.split('|');
+            if (schemeId === scheme.id && scenarioId === scenario.id) perSession.push(ms);
+          }
+          const totals = scenario.tasks.reduce(
+            (agg, _task, taskIndex) => {
+              const acc = bySchemeTask.get(`${scheme.id}|${scenario.id}|${taskIndex}`);
+              return {
+                attempts: agg.attempts + (acc?.attempts ?? 0),
+                successes: agg.successes + (acc?.successes ?? 0),
+              };
+            },
+            { attempts: 0, successes: 0 },
+          );
+          return {
+            scenarioId: scenario.id,
+            persona: scenario.persona,
+            attempts: totals.attempts,
+            successes: totals.successes,
+            medianMs: median(perSession),
+          };
+        })
+        .filter((o) => o.attempts > 0);
+
+      const runTimes: number[] = [];
+      for (const [key, ms] of runTime) {
+        if (key.split('|')[0] === scheme.id) runTimes.push(ms);
+      }
+
       return {
         schemeId: scheme.id,
         sessions: bySchemeSessions.get(scheme.id)?.size ?? 0,
@@ -185,7 +240,9 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
         firstClickRate: rate(overall?.firstClick ?? 0, overall?.attempts ?? 0),
         giveupRate: rate(overall?.giveups ?? 0, overall?.attempts ?? 0),
         medianMs: median(overall?.times ?? []),
+        medianRunMs: median(runTimes),
         tasks,
+        scenarioOutcomes,
       };
     })
     .filter((o) => o.attempts > 0);

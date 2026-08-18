@@ -98,13 +98,32 @@ modes:
 
 The first mode listed is the default, so its sections cost nothing extra to reach. Any
 other mode costs a click on the control plus a glance at it. A section with no `[mode=]`
-is present whichever mode is active, which is why Telemetry above needs no tag.
+is present whichever mode is active.
 
 This matters because it is not the same as making Code and Agents two ordinary top-level
 items. With a switcher, someone in the default mode sees the code sections already opened
 out beneath the control; the agent sections only appear once they realise the control is
 there and use it. Bracket groups can be combined and appear in any order, so a section can
 be both collapsible and mode-scoped.
+
+**Individual items can be mode-scoped too**, which matters more for realism than for the
+score. Today's Telemetry section is in both modes but drops Sessions, Errors and Logs in
+agent mode:
+
+```md
+# Telemetry [collapsed]
+- Sessions [mode=code] -> sessions
+- Errors [mode=code] -> errors
+- Logs [mode=code] -> logs
+- Traces -> traces
+- Alerts -> alerts
+```
+
+A participant in agent mode who opens Telemetry looking for Sessions now genuinely will not
+find it, which is the confusion worth capturing. It changes no cost, because those pages
+stay reachable from the default mode for free, but it changes what people see and therefore
+what they do. Tagging an item with a mode that contradicts its section is an error, since
+nothing could ever see it.
 - Binding the same destination twice is legal. Duplication is counted and reported.
 - Binding an id that is not in the snapshot is legal too. Candidate schemes are
   expected to invent destinations; they are reported as proposed rather than as errors.
@@ -262,6 +281,19 @@ For hosting, set the same two variables in your Vercel project settings. Vite in
 them at build time rather than reading them at runtime, so a build that ran without them
 will stay in local-only mode no matter what the host is configured with afterwards.
 Rebuild after changing them.
+
+### Time
+
+Participants are never shown a timer, but every task is timed and the report has a
+**How long it took** section. This is a separate question from effort: a flat list can score
+well on effort and still be slower, because a long list takes longer to read even when it
+takes fewer clicks. If a menu wins on clicks and loses on time, that is worth knowing before
+picking it.
+
+Everything is reported as a median rather than a mean, so one participant who wandered off
+mid-task cannot drag a column. Per-task times also appear beside the predicted effort in
+**How someone would get there**, which is the most direct check on whether the effort score
+matches reality.
 
 ### Reading the results
 

@@ -102,10 +102,13 @@ export function parseScheme(src: string, filename = '<scheme>'): Scheme {
     }
 
     const { label, reveal, mode, destinationId } = parseLabelPart(bulletMatch[2], modeIds);
-    if (mode !== null) {
-      throw new Error(`${filename}:${i + 1}: [mode=] is only valid on a \`#\` section`);
+    const sectionMode = sections[sections.length - 1]?.mode ?? null;
+    if (mode !== null && sectionMode !== null && mode !== sectionMode) {
+      throw new Error(
+        `${filename}:${i + 1}: "${label}" is [mode=${mode}] inside a [mode=${sectionMode}] section, so it can never be seen`,
+      );
     }
-    const node: SchemeNode = { label, destinationId, reveal, mode: null, isSection: false, depth, children: [] };
+    const node: SchemeNode = { label, destinationId, reveal, mode, isSection: false, depth, children: [] };
     parent.children.push(node);
     stack.length = depth;
     stack[depth] = node;
@@ -114,7 +117,12 @@ export function parseScheme(src: string, filename = '<scheme>'): Scheme {
   if (sections.length === 0) throw new Error(`${filename}: scheme has no \`#\` sections`);
 
   if (modes) {
-    const used = new Set(sections.map((s) => s.mode).filter((m): m is string => m !== null));
+    const used = new Set<string>();
+    const collectModes = (node: SchemeNode) => {
+      if (node.mode !== null) used.add(node.mode);
+      for (const child of node.children) collectModes(child);
+    };
+    for (const section of sections) collectModes(section);
     const unused = modes.filter((m) => !used.has(m.id));
     if (unused.length > 0) {
       throw new Error(`${filename}: mode(s) ${unused.map((m) => m.id).join(', ')} have no sections`);

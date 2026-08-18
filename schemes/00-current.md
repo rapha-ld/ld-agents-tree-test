@@ -22,9 +22,10 @@ notes: >
   Sections are collapsible in this variant, which is why each carries
   [collapsed].
 
-  Not modelled: in agent mode the Telemetry section also drops Sessions, Errors
-  and Logs. Since those stay reachable from code mode at no switch cost, and cost
-  is the cheapest route, modelling the drop would not change any number.
+  Telemetry is present in both modes but drops Sessions, Errors and Logs in agent
+  mode, so those three carry [mode=code]. This is about showing participants what
+  they would really see rather than about cost: someone in agent mode who opens
+  Telemetry looking for Sessions genuinely will not find it.
 ---
 
 # Features [collapsed] [mode=code]
@@ -118,11 +119,11 @@ notes: >
   - Events -> product-analytics.events
 
 # Telemetry [collapsed]
-- Sessions -> sessions
+- Sessions [mode=code] -> sessions
   - Session detail -> session
-- Errors -> errors
+- Errors [mode=code] -> errors
   - Error detail -> error
-- Logs -> logs
+- Logs [mode=code] -> logs
 - Traces -> traces
 - Observability metrics -> observability-metrics
 - Alerts -> alerts

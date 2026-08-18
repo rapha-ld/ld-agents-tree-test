@@ -79,6 +79,17 @@ export function sectionsForMode(scheme: Scheme, modeId: string | null): SchemeNo
   return scheme.sections.filter((s) => s.mode === null || s.mode === modeId);
 }
 
+/**
+ * Children on screen in a given mode. Items can be mode-scoped too, not just
+ * sections: today's Telemetry section drops Sessions, Errors and Logs in agent
+ * mode, and a participant looking for them there needs to genuinely not find
+ * them.
+ */
+export function visibleChildren(node: SchemeNode, modeId: string | null): SchemeNode[] {
+  if (modeId === null) return node.children;
+  return node.children.filter((c) => c.mode === null || c.mode === modeId);
+}
+
 export function defaultMode(scheme: Scheme): string | null {
   return scheme.modes?.[0]?.id ?? null;
 }
@@ -101,8 +112,10 @@ export function collectPlacements(scheme: Scheme, params: CostParams = DEFAULT_P
     if (node.destinationId !== null) {
       out.push({ destinationId: node.destinationId, labels: path, cost, clicks, mode });
     }
-    for (const child of node.children) {
-      visit(child, cost, clicks, path, node.children.length, mode);
+    // Sibling count is what is actually on screen in this mode, not the whole list.
+    const children = visibleChildren(node, mode);
+    for (const child of children) {
+      visit(child, cost, clicks, path, children.length, mode);
     }
   };
 
@@ -287,11 +300,18 @@ function breadthProfile(scheme: Scheme) {
   } else {
     push(0, scheme.sections.length);
   }
-  const visit = (node: SchemeNode) => {
-    if (node.children.length > 0) push(node.depth + 1, node.children.length);
-    for (const child of node.children) visit(child);
+  const visit = (node: SchemeNode, mode: string | null) => {
+    const children = visibleChildren(node, mode);
+    if (children.length > 0) push(node.depth + 1, children.length);
+    for (const child of children) visit(child, mode);
   };
-  for (const section of scheme.sections) visit(section);
+  if (scheme.modes) {
+    for (const mode of scheme.modes) {
+      for (const section of sectionsForMode(scheme, mode.id)) visit(section, mode.id);
+    }
+  } else {
+    for (const section of scheme.sections) visit(section, null);
+  }
 
   return [...byDepth.entries()]
     .sort((a, b) => a[0] - b[0])

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { scenarios, schemes } from '../data';
-import { defaultMode, sectionsForMode } from '../score/cost';
+import { defaultMode, sectionsForMode, visibleChildren } from '../score/cost';
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
   persistenceMode,
@@ -312,7 +312,8 @@ export function Study() {
   }
 
   if (phase === 'task' && task) {
-    const level = trail.length === 0 ? sectionsForMode(scheme, mode) : trail[trail.length - 1].children;
+    const level =
+      trail.length === 0 ? sectionsForMode(scheme, mode) : visibleChildren(trail[trail.length - 1], mode);
     return (
       <>
         <div className="study">
