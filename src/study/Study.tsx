@@ -3,9 +3,11 @@ import { scenarios, schemes } from '../data';
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
   persistenceMode,
+  REQUIRED_ENV,
   saveEvents,
   saveSession,
   type EventKind,
+  type SaveResult,
   type StudyEvent,
   type StudySession,
 } from '../session';
@@ -48,6 +50,7 @@ export function Study() {
   const [trail, setTrail] = useState<SchemeNode[]>([]);
   const [label, setLabel] = useState('');
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const [saveIssue, setSaveIssue] = useState<string | null>(null);
 
   const sessionId = useRef<string>(crypto.randomUUID());
   const seq = useRef(0);
@@ -83,11 +86,32 @@ export function Study() {
     [scenario, taskIndex, trail],
   );
 
+  /**
+   * A failed write must never be silent. The participant is told their answers
+   * were recorded, so if that is not true they need to see it while there is
+   * still someone around to do something about it.
+   */
+  const noteSave = useCallback((result: SaveResult) => {
+    if (result.remote === 'failed') {
+      setSaveIssue(
+        result.local
+          ? `Could not reach the study database: ${result.error ?? 'unknown error'}. Your answers are still saved in this browser.`
+          : `Could not save your answers: ${result.error ?? 'unknown error'}. Nothing has been stored.`,
+      );
+      return;
+    }
+    if (!result.local && result.remote === 'skipped') {
+      setSaveIssue(
+        'This browser is refusing to store results, and no study database is configured, so nothing is being saved.',
+      );
+    }
+  }, []);
+
   const flush = useCallback(async () => {
     const batch = pending.current;
     pending.current = [];
-    await saveEvents(batch);
-  }, []);
+    noteSave(await saveEvents(batch));
+  }, [noteSave]);
 
   const session = useCallback(
     (schemeId: string, finished: boolean): StudySession => ({
@@ -106,7 +130,7 @@ export function Study() {
     setScheme(resolved);
     sessionStart.current = Date.now();
     taskStart.current = Date.now();
-    await saveSession(session(resolved.id, false));
+    noteSave(await saveSession(session(resolved.id, false)));
     setPhase('scenario');
   };
 
@@ -120,6 +144,7 @@ export function Study() {
     seq.current = 0;
     sessionId.current = crypto.randomUUID();
     setConfirmRestart(false);
+    setSaveIssue(null);
     setScheme(null);
     setOrder(shuffled(scenarios));
     setScenarioIndex(0);
@@ -153,7 +178,7 @@ export function Study() {
 
       const isLastScenario = scenarioIndex + 1 >= order.length;
       if (isLastScenario) {
-        if (scheme) await saveSession(session(scheme.id, true));
+        if (scheme) noteSave(await saveSession(session(scheme.id, true)));
         setPhase('done');
         return;
       }
@@ -163,7 +188,7 @@ export function Study() {
       seq.current = 0;
       setPhase('scenario');
     },
-    [flush, order.length, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
+    [flush, noteSave, order.length, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
   );
 
   const choose = (node: SchemeNode) => {
@@ -186,6 +211,12 @@ export function Study() {
     [order, scenarioIndex, taskIndex],
   );
 
+  const saveBanner = saveIssue ? (
+    <div className="save-issue" role="alert">
+      <strong>Answers are not reaching the database.</strong> {saveIssue}
+    </div>
+  ) : null;
+
   const restartBar = confirmRestart ? (
     <div className="restart-confirm">
       <span>Start over from the beginning? This run&rsquo;s answers are discarded.</span>
@@ -207,21 +238,19 @@ export function Study() {
   if (phase === 'intro' || !scheme) {
     return (
       <div className="card">
+        {saveBanner}
         <h1>Navigation study</h1>
         <p>
           You will be given a series of short tasks. For each one, click through the menu to where you would expect to
-          find the answer. There is no content behind the labels, and nothing will tell you whether you were right.
+          find the answer.
         </p>
         <p>
-          Click through until you reach the place you would look. If you have no idea, say so and move on. Guessing
-          wildly is less useful to us than telling us you are lost.
-        </p>
-        <p className="muted">
-          {totalTasks} tasks across {order.length} scenarios. About 10 minutes.
+          Click through until you reach the place you would look. If you have no idea, click "I would not know where to look." Guessing
+          is less useful to us than telling us you are lost.
         </p>
 
         <label className="field">
-          Which menu to test
+          Select navigation scheme
           <select value={choice} onChange={(e) => setChoice(e.target.value)}>
             <option value={RANDOM}>Pick one at random</option>
             {schemes.map((s) => (
@@ -230,24 +259,24 @@ export function Study() {
               </option>
             ))}
           </select>
-          <span className="hint">
-            {choice === RANDOM
-              ? 'Random is the right choice for a real study, because it keeps participants from being compared unfairly.'
-              : 'Choose Random instead if you are collecting results you want to compare across menus.'}
-          </span>
         </label>
 
         <label className="field">
-          Name or initials (optional)
+          Your Name
           <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="optional" />
         </label>
 
         <button className="primary" onClick={() => void start()}>
           Start
         </button>
-        <p className="muted small">
-          Results are saved {persistenceMode === 'supabase' ? 'to the study database' : 'in this browser'}.
-        </p>
+        {persistenceMode === 'supabase' ? (
+          <p className="muted small">Results are saved to the study database.</p>
+        ) : (
+          <p className="muted small">
+            No study database is connected, so results stay in this browser and only whoever is sitting here can export
+            them. Set {REQUIRED_ENV.join(' and ')} to change that.
+          </p>
+        )}
       </div>
     );
   }
@@ -255,6 +284,7 @@ export function Study() {
   if (phase === 'scenario' && scenario) {
     return (
       <div className="card">
+        {saveBanner}
         {restartBar}
         <p className="muted small">
           Scenario {scenarioIndex + 1} of {order.length}
@@ -278,6 +308,7 @@ export function Study() {
     const level = trail.length === 0 ? scheme.sections : trail[trail.length - 1].children;
     return (
       <div className="study">
+        {saveBanner}
         {restartBar}
         <div className="progress">
           <div className="bar" style={{ width: `${(doneTasks / totalTasks) * 100}%` }} />
@@ -349,13 +380,23 @@ export function Study() {
 
   return (
     <div className="card">
+      {saveBanner}
       <h1>Done</h1>
-      <p>Thank you. Your answers are recorded.</p>
-      <p className="muted small">
-        {persistenceMode === 'supabase'
-          ? 'Saved to the study database.'
-          : 'Saved in this browser. Whoever is running the study can export them from the report page.'}
-      </p>
+      {saveIssue ? (
+        <p>
+          Thank you. Please let whoever is running this study know that the message above appeared, because your answers
+          may not have been stored.
+        </p>
+      ) : (
+        <p>Thank you. Your answers are recorded.</p>
+      )}
+      {saveIssue ? null : (
+        <p className="muted small">
+          {persistenceMode === 'supabase'
+            ? 'Saved to the study database.'
+            : 'Saved in this browser, because no study database is connected. Whoever is running the study can export them from the report page.'}
+        </p>
+      )}
       <div className="actions">
         <button className="primary" onClick={restart}>
           Run it again

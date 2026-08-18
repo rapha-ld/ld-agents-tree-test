@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { destinations, scenarios, schemes, snapshotDate, weights } from '../data';
 import { DEFAULT_PARAMS, scoreScheme, type CostParams } from '../score/cost';
-import { clearLocalResults, exportLocalResults, localResultCount, persistenceMode } from '../session';
+import { clearLocalResults, exportLocalResults, localResultCount, persistenceMode, REQUIRED_ENV } from '../session';
 import { analyze, type ResultsFile, type SchemeOutcome } from './analyze';
 
 const ALPHA_SWEEP = [0, 0.25, 0.5, 0.75, 1, 1.5, 2];
@@ -273,12 +273,28 @@ export function Report() {
       </div>
 
       <h2>Measured</h2>
-      <p className="muted">
-        Persistence is currently <strong>{persistenceMode}</strong>.{' '}
-        {persistenceMode === 'local'
-          ? `This browser holds ${local.sessions} session(s) and ${local.events} event(s).`
-          : 'Sessions insert straight into Supabase; export from there and load the JSON here.'}
-      </p>
+      {persistenceMode === 'local' ? (
+        <div className="callout warnbox">
+          <h3>No study database is connected</h3>
+          <p>
+            This is a fallback, not a setting. Results stay in whichever browser took the study, so a participant on
+            their own machine keeps their answers there and you would have to ask them to export the file.
+          </p>
+          <p>
+            To connect one, set <code>{REQUIRED_ENV[0]}</code> and <code>{REQUIRED_ENV[1]}</code> and restart the dev
+            server. The README has the steps.
+          </p>
+          <p>
+            This browser holds <strong>{local.sessions}</strong> session(s), <strong>{local.finished}</strong> finished,
+            and <strong>{local.events}</strong> event(s). Only finished runs are counted below.
+          </p>
+        </div>
+      ) : (
+        <p className="muted">
+          Connected to the study database. Rows insert as participants go. Export from Supabase and load the JSON here
+          to see measured results. This browser also holds {local.finished} finished run(s) of its own.
+        </p>
+      )}
       <div className="actions">
         <button onClick={download} disabled={local.sessions === 0}>
           Download local results

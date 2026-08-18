@@ -17,7 +17,7 @@ function useHashRoute() {
 function GlobalNav({ view }: { view: 'study' | 'report' }) {
   return (
     <header className="globalnav">
-      <span className="brand">nav-lab</span>
+      <span className="brand">LD Nav Lab</span>
       <nav aria-label="Sections">
         <a href="#/study" className={view === 'study' ? 'active' : undefined} aria-current={view === 'study'}>
           Study
@@ -26,9 +26,6 @@ function GlobalNav({ view }: { view: 'study' | 'report' }) {
           Report
         </a>
       </nav>
-      <span className="navhint">
-        {view === 'study' ? 'Take a navigation test' : 'Compare menus and see results'}
-      </span>
     </header>
   );
 }

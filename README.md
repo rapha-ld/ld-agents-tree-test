@@ -168,20 +168,56 @@ click, the final answer, and abandonment. Success is derived at analysis time fr
 
 ### Where results go
 
-With no configuration, results are kept in the participant's browser and the report
-page can export them as JSON. That is enough for moderated sessions.
+**Nothing is connected to a database today.** Results are written to `localStorage` in
+whichever browser took the study, and the report page can export them as JSON. That is
+genuinely fine for moderated sessions where you are sitting next to the participant, and
+it is why the report shows a warning rather than pretending otherwise.
 
-For unmoderated studies, set two variables and rows insert straight into Supabase:
+The limitation is worth being clear about before you run anything unmoderated: if you
+send a link to someone on their own machine, their answers stay on their machine. You
+would have to ask them to open the report page and send you the file.
 
-```
-VITE_SUPABASE_URL=...
-VITE_SUPABASE_ANON_KEY=...
-```
+Whatever the mode, a failed write is surfaced in the participant's UI rather than logged
+to the console. If the database cannot be reached, the final screen stops saying
+"your answers are recorded" and asks them to tell you instead. Do not silently trust a
+collection run you have not checked.
 
-Create the tables with `supabase/schema.sql`. The anon role gets insert only, so a
-participant cannot read anyone else's answers. Export from Supabase and load the JSON
-into the report page to see measured success, directness, and first-click rates
-alongside the predicted costs.
+### Connecting Supabase, when you are ready
+
+1. Create a Supabase project. The free tier is more than enough; this stores a few
+   thousand short rows.
+2. In the SQL editor, run `supabase/schema.sql`. It creates the `sessions` and `events`
+   tables, an index, and row-level security policies granting the `anon` role insert
+   only, plus update on `sessions` so a run can be marked finished. Participants cannot
+   read anyone's answers, including their own.
+3. From **Project Settings → API**, copy the project URL and the `anon` public key.
+4. Create `.env.local` in the repo root:
+
+   ```
+   VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+   VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+   ```
+
+   It is already gitignored. The `anon` key is designed to ship in a browser bundle and
+   the policies are what protect the data, so this is not a secret you need to guard.
+5. Restart the dev server. Vite reads `.env` files only at startup, so a running server
+   will not pick them up.
+6. Confirm it worked: the report page should replace the warning with "Connected to the
+   study database", and the study start screen should say results are saved to the
+   database. **Take one throwaway run end to end and check a row appears in `sessions`
+   before you send the link to anyone.**
+
+For hosting, set the same two variables in your Vercel project settings. Vite inlines
+them at build time rather than reading them at runtime, so a build that ran without them
+will stay in local-only mode no matter what the host is configured with afterwards.
+Rebuild after changing them.
+
+### Reading the results
+
+Export `sessions` and `events` from Supabase as a single JSON object shaped
+`{ "sessions": [...], "events": [...] }` and load it on the report page, which is the
+same path locally-collected results take. Only runs with a `finished_at` are counted, so
+abandoned and restarted runs are ignored automatically.
 
 Directness is the metric the model predicts and the study measures. Regressing one
 against the other is what turns α and the reveal penalties from guesses into

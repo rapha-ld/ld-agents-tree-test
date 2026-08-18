@@ -449,3 +449,20 @@ It issues a fresh session id, and `analyze` now ignores sessions with no `finish
 so an abandoned run cannot contribute answers to the results. This was a latent
 correctness problem rather than only a convenience: without it, a restarted run would
 have double-counted a participant's completed tasks.
+
+## Honest state of persistence
+
+Recorded because the earlier wording in this document oversold it. As shipped, no
+Supabase project exists, no keys are set, and `supabase/schema.sql` has never been run.
+Every study result lives in the browser that produced it.
+
+The code path, the schema, and the policies are written and the UI reports which mode it
+is in, but the tool is local-only until someone completes the steps in the README. The
+report says so in a warning rather than describing local storage as a setting.
+
+Two related corrections went in at the same time. Writes now return a result describing
+what happened locally and remotely, instead of swallowing failures into a
+`console.warn`. And when a write fails, the participant's final screen no longer claims
+their answers were recorded; it asks them to tell whoever is running the study. Without
+that, a typo in a key would have produced a study that collected nothing and reported
+success to every participant.

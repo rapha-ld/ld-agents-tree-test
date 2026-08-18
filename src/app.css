@@ -18,6 +18,7 @@
 .globalnav {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
   gap: 1.5rem;
   padding: 0.75rem 1.5rem;
   background: var(--panel);
@@ -173,6 +174,19 @@ button.ghost:hover { color: var(--ink); }
   margin-bottom: 1.5rem;
 }
 .callout p { margin: 0.5rem 0 0; font-size: 0.9rem; }
+.callout.warnbox { background: #fdf1ee; border-color: #efc9c0; }
+
+.save-issue {
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.85rem;
+  background: #fdf1ee;
+  border: 1px solid #efc9c0;
+  border-left: 3px solid var(--warn);
+  border-radius: 6px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.save-issue strong { color: var(--warn); }
 
 .controls { display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 1rem; }
 .controls label { font-size: 0.85rem; color: var(--muted); }
