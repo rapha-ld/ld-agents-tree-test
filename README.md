@@ -320,11 +320,20 @@ later.
 
 ## Deploying
 
-Static build, no server code.
+Static build, no server code. `vite.config.ts` uses a relative base, so the output works
+at any subpath without configuration, and the app uses hash routing, so no host needs SPA
+rewrite rules.
 
 ```bash
 pnpm build          # outputs dist/
 ```
 
-Vercel or GitHub Pages both work. `vite.config.ts` uses a relative base so a project
-subpath needs no configuration.
+**GitHub Pages** is wired up in `.github/workflows/pages.yml`, which tests, builds and
+publishes `dist/` on every push to `main`. It needs the repository's Pages source set to
+**GitHub Actions**, under Settings then Pages. Pointing Pages at a branch instead will
+serve a blank page: serving from a branch does not run a build, so it hands the browser
+the dev `index.html` and its reference to `/src/main.tsx`, which no browser can execute.
+
+**Vercel** works too. Set the Supabase variables in the project settings if you have
+connected a database, and remember Vite inlines them at build time, so changing them needs
+a rebuild.

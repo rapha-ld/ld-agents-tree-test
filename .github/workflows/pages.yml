@@ -1,0 +1,61 @@
+# Builds the app and publishes dist/ to GitHub Pages.
+#
+# Pages serving straight from a branch does not run a build, so it would serve
+# the dev index.html and its reference to /src/main.tsx, which no browser can
+# execute. This builds first and publishes the output instead.
+#
+# Requires the repository's Pages source to be set to "GitHub Actions"
+# (Settings, then Pages) rather than "Deploy from a branch".
+name: Deploy to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it midway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # A deploy that ships a broken cost model is worse than no deploy.
+      - run: pnpm test
+
+      # Also type-checks, since the build script runs tsc first.
+      - run: pnpm build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
