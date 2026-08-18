@@ -114,7 +114,8 @@ if (detail) {
         console.log(`  [unreachable] ${t.prompt}  (targets: ${t.targets.join(', ')})`);
         continue;
       }
-      console.log(`  ${t.cost.toFixed(2)}  ${t.clicks} clicks  ${t.prompt}`);
+      const clicks = `${t.clicks} ${t.clicks === 1 ? 'click' : 'clicks'}`;
+      console.log(`  ${t.cost.toFixed(2)}  ${clicks}  ${t.prompt}`);
       console.log(`        ${t.labels?.join('  >  ')}`);
     }
   }
