@@ -1,0 +1,149 @@
+[
+  {
+    "key": "flags",
+    "label": "Flags",
+    "icon": "toggle-on",
+    "navigator": "toFlags",
+    "gated": false
+  },
+  {
+    "key": "guarded-rollouts",
+    "label": "Guarded rollouts",
+    "icon": "shield-heart-outline",
+    "navigator": "toGuardedRollouts",
+    "gated": true
+  },
+  {
+    "key": "release-assistant",
+    "label": "Release assistant",
+    "icon": "",
+    "navigator": "toReleasePipelines",
+    "gated": true
+  },
+  {
+    "key": "segments",
+    "label": "Segments",
+    "icon": "chart-venn",
+    "navigator": "toSegments",
+    "gated": false
+  },
+  {
+    "key": "contexts",
+    "label": "Contexts",
+    "icon": "fingerprint",
+    "navigator": "toContexts",
+    "gated": false
+  },
+  {
+    "key": "live-events",
+    "label": "Live events",
+    "icon": "analyze",
+    "navigator": "toLiveEvents",
+    "gated": true
+  },
+  {
+    "key": "sessions",
+    "label": "Sessions",
+    "icon": "play-circle-outline",
+    "navigator": "toSessions",
+    "gated": true
+  },
+  {
+    "key": "errors",
+    "label": "Errors",
+    "icon": "warning-outline",
+    "navigator": "toErrors",
+    "gated": true
+  },
+  {
+    "key": "logs",
+    "label": "Logs",
+    "icon": "article",
+    "navigator": "toLogs",
+    "gated": true
+  },
+  {
+    "key": "traces",
+    "label": "Traces",
+    "icon": "arrow-connect-star-outline",
+    "navigator": "toTraces",
+    "gated": true
+  },
+  {
+    "key": "observability-metrics",
+    "label": "Observability metrics",
+    "icon": "chart-histogram",
+    "navigator": "toObservabilityMetrics",
+    "gated": true
+  },
+  {
+    "key": "alerts",
+    "label": "Alerts",
+    "icon": "alert-rhombus",
+    "navigator": "toAlerts",
+    "gated": true
+  },
+  {
+    "key": "dashboards",
+    "label": "Dashboards",
+    "icon": "chart-dashboard",
+    "navigator": "toDashboards",
+    "gated": true
+  },
+  {
+    "key": "experiments",
+    "label": "Experiments",
+    "icon": "flask",
+    "navigator": "toExperiments",
+    "gated": true
+  },
+  {
+    "key": "mabs",
+    "label": "Multi-armed bandits",
+    "icon": "arrow-merge",
+    "navigator": "toMultiArmedBandits",
+    "gated": true
+  },
+  {
+    "key": "holdouts",
+    "label": "Holdouts",
+    "icon": "holdout",
+    "navigator": "toHoldoutsRoot",
+    "gated": true
+  },
+  {
+    "key": "metrics",
+    "label": "Metrics",
+    "icon": "ruler",
+    "navigator": "toMetrics",
+    "gated": false
+  },
+  {
+    "key": "observe",
+    "label": "Event explorer",
+    "icon": "sparkle",
+    "navigator": "toObserve",
+    "gated": true
+  },
+  {
+    "key": "product-analytics",
+    "label": "Product analytics",
+    "icon": "chart-histogram",
+    "navigator": "toProductAnalytics",
+    "gated": true
+  },
+  {
+    "key": "metric-data-sources",
+    "label": "Metric data sources",
+    "icon": "data",
+    "navigator": "toMetricDataSourcesSettings",
+    "gated": true
+  },
+  {
+    "key": "data-sources",
+    "label": "Data sources",
+    "icon": "data",
+    "navigator": "toDataSources",
+    "gated": true
+  }
+]

@@ -1,7 +1,8 @@
 # nav-lab design
 
 Date: 2026-08-13
-Status: approved design, pending implementation plan
+Status: implemented. See "Changes during implementation" at the end for where the
+build diverged from this design.
 
 ## Purpose
 
@@ -66,9 +67,12 @@ nav-lab/
 ```
 
 Static single-page app. Vite, React, TypeScript. Deploys to Vercel, and stays
-compatible with GitHub Pages because there is no server code. Session results insert
-directly into Supabase from the browser using an anon key against an insert-only
-table.
+compatible with GitHub Pages because there is no server code.
+
+Results are always written to the browser's local storage first, and additionally
+inserted into Supabase when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set.
+That ordering means the tool is usable for moderated sessions before any database
+exists, and a failed insert never costs a participant their answers.
 
 ## Data model
 
@@ -152,6 +156,8 @@ Grammar:
   `flyout`, `overflow`, `filter`. Absent means the node is directly visible.
 - Modifiers are legal on `#` headings, which is how a collapsed section is expressed.
 - A destination ID may appear more than once. Duplication is legal and measured.
+- A `#` heading may itself be bound with `->`. A bound heading costs a click, since
+  selecting it navigates. This is what makes a flat scheme with no groups expressible.
 - A scheme may bind to an ID absent from `destinations.json`. Candidate schemes are
   expected to invent destinations, such as a unified observability landing page or a
   telemetry view split by a Code Control / Agent Control filter. These are reported as
@@ -230,24 +236,38 @@ semantics.
 For a path through nodes `n₁..nₖ`:
 
 ```
-cost = Σᵢ [ click(nᵢ) + α · log₂(siblingsᵢ + 1) + reveal(typeᵢ) ] + gate
+cost = Σᵢ [ click(nᵢ) + α · log₂(siblingsᵢ + 1) + overflow(siblingsᵢ) + reveal(typeᵢ) ] + gate
 ```
 
-- `click(nᵢ)` is 1, except for an unmodified `#` section whose children are already
-  visible, where it is 0. The scan term still applies to such a section, because the
-  participant still has to read the group labels to choose a branch.
+- `click(nᵢ)` is 1, except for an unbound directly-visible container, whose children
+  are already on screen, where it is 0. The scan term still applies to such a node,
+  because the participant still has to read the group labels to choose a branch.
 - `siblingsᵢ` is the number of options presented at the level where that choice is
   made, including the chosen node. At the first level this is the number of `#`
   sections. Below that it is the number of children of the chosen node's parent.
 - `α` defaults to 0.5. This is the breadth-versus-depth dial and is the single most
   important parameter to sensitivity-test.
-- `reveal` defaults: visible 0, `tab` 0.25, `collapsed` 0.5, `filter` 0.75,
-  `flyout` 1.0, `overflow` 1.5.
+- `overflow(n)` charges `0.15` for each peer beyond a visible budget of 12. Hick's law
+  assumes every choice is on screen at once; past the fold the participant scrolls,
+  loses their place, and re-scans. Setting the penalty to 0 recovers the pure
+  logarithmic model exactly.
+- `reveal` defaults: visible 0, `tab` 0.25, `collapsed` 0.5, `filter` and `switcher`
+  0.75, `flyout` 1.0, `overflow` 1.5.
 - `gate` defaults to 0.5 and applies once when the destination is gated.
 
 Plain hop count was rejected because it cannot express the breadth-versus-depth
 tradeoff. Under hop count a flat sidebar of 25 items beats every grouped alternative,
 which makes it useless for the decision at hand.
+
+The overflow term exists because the scan term alone does not fix that. Under a pure
+logarithmic scan, a flat menu still wins at every value of α, for a reason that is
+arithmetic rather than empirical: splitting one scan into two stages costs more total
+scanning than one large scan, since log₂9 + log₂7 > log₂36, and grouping adds a
+traversal step on top. This was confirmed against the five shipped schemes, where
+`flat` led the whole α sweep from 0 to 2 until the overflow term was added.
+
+The consequence is a real limit on what the model can settle, recorded under accepted
+limitations below.
 
 When a destination appears in several places the model takes the minimum cost, and
 reports the duplication count separately. Duplication helps findability and hurts
@@ -363,3 +383,49 @@ plumbing are all reused unchanged.
   between schemes survives this. Absolute success rates do not.
 - Phase 1 tests information architecture, not visual pattern. A scheme can win the
   tree test and still fail as a rail, sidebar, or flyout.
+- The cost model cannot settle breadth versus depth. It measures effort to reach a
+  destination once you know where it is, and grouping earns its keep by narrowing the
+  search space semantically, which the model deliberately does not represent. Treat
+  its output as a check for burial, coverage, and comparison between schemes of
+  similar shape. Only the tree test can answer whether grouping helps.
+
+
+## Changes during implementation
+
+Recorded so the design and the code do not silently disagree.
+
+**The cost model gained an overflow term.** The scan term alone could not make grouping
+worthwhile at any α, for the arithmetic reason described above. The overflow term
+corrects a violated assumption in Hick's law rather than tuning the result, and it is
+exposed as a slider in the report so anyone can see what it is doing.
+
+**The zero-click rule was generalised.** The design limited it to unmodified `#`
+sections. The implementation applies it to any unbound directly-visible container,
+which is the same rule stated without reference to markdown syntax.
+
+**Bound `#` headings and a `switcher` modifier were added to the grammar.** Both were
+needed to express real schemes: a flat nav has no unbound groups, and environment and
+project switchers are neither flyouts nor filters.
+
+**Persistence is local-first.** The design had results inserting straight into
+Supabase. The implementation always keeps a local copy and treats Supabase as an
+additional sink, so the tool works with no configuration and a network failure cannot
+lose a session.
+
+**The report reads measured results from a JSON file.** The anon role has insert-only
+access and therefore cannot read the results table, so the report takes an exported
+JSON file rather than querying. This also means locally-collected results and
+Supabase-collected results go through exactly the same analysis path.
+
+**Destination counts.** 320 route patterns yielded 319 destinations, the dropped one
+being the `/*` catch-all. The curated overlay added 43, for 362 total. Deriving stable
+IDs needed three rules the design did not anticipate: account settings under
+`/settings/*` take an `account.` prefix so they do not collide with a project's own
+settings tree; consecutive route params are named by the param rather than by
+singularising the collection; and a param following an already-singular segment opens a
+`detail` node.
+
+**A CLI report was added.** `pnpm score` prints the comparison, with `--scheme=<id>` for
+per-scenario shortest paths, `--alpha=` to override the scan weight, and `--sweep` to
+show ranking stability. The design assumed the browser report would be the only view,
+but the terminal is where scheme authoring actually happens.

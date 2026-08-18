@@ -1,0 +1,3128 @@
+{
+  "extractedFrom": "/Users/zac/code/launchdarkly/gonfalon",
+  "extractedAt": "2026-08-18",
+  "sources": {
+    "ownership": "static/ld/routes/appRouteOwnership.ts",
+    "navigators": "packages/navigator/src/navigators.ts",
+    "navSections": "packages/chrome/src/internal/useNavigationSections.ts"
+  },
+  "counts": {
+    "routePatterns": 320,
+    "destinations": 319,
+    "gated": 64,
+    "collisionsResolved": 0
+  },
+  "destinations": [
+    {
+      "id": "account",
+      "label": "Account settings",
+      "routePattern": "/settings",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.application",
+      "label": "Application",
+      "routePattern": "/settings/applications/:applicationKey",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApplication"
+    },
+    {
+      "id": "account.application.edit",
+      "label": "Edit",
+      "routePattern": "/settings/applications/:applicationKey/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toEditApplication"
+    },
+    {
+      "id": "account.application.history",
+      "label": "History",
+      "routePattern": "/settings/applications/:applicationKey/history/*",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApplicationHistory"
+    },
+    {
+      "id": "account.application.version.support-status",
+      "label": "Support status",
+      "routePattern": "/settings/applications/:applicationKey/versions/:versionKey/support-status",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApplicationVersionSupportStatus"
+    },
+    {
+      "id": "account.application.versions",
+      "label": "Versions",
+      "routePattern": "/settings/applications/:applicationKey/versions",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApplicationVersions"
+    },
+    {
+      "id": "account.application.versions.new",
+      "label": "New",
+      "routePattern": "/settings/applications/:applicationKey/versions/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateApplicationVersion"
+    },
+    {
+      "id": "account.applications",
+      "label": "Applications",
+      "routePattern": "/settings/applications",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApplications"
+    },
+    {
+      "id": "account.applications.new",
+      "label": "New",
+      "routePattern": "/settings/applications/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateApplication"
+    },
+    {
+      "id": "account.authorization",
+      "label": "Authorization",
+      "routePattern": "/settings/authorization",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAuthorization"
+    },
+    {
+      "id": "account.authorization.oauth",
+      "label": "OAUTH",
+      "routePattern": "/settings/authorization/oauth",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAuthorizationOauthApps"
+    },
+    {
+      "id": "account.authorization.oauth.detail.review",
+      "label": "Review",
+      "routePattern": "/settings/authorization/oauth/:appId/review",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toReviewOAuthApp"
+    },
+    {
+      "id": "account.authorization.role",
+      "label": "Role",
+      "routePattern": "/settings/authorization/roles/:key",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAuthorizationCustomRoles"
+    },
+    {
+      "id": "account.authorization.token.clone",
+      "label": "Clone",
+      "routePattern": "/settings/authorization/tokens/:tokenId/clone",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCloneAccessToken"
+    },
+    {
+      "id": "account.authorization.token.edit",
+      "label": "Edit",
+      "routePattern": "/settings/authorization/tokens/:tokenId/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toEditAccessToken"
+    },
+    {
+      "id": "account.authorization.token.reset",
+      "label": "Reset",
+      "routePattern": "/settings/authorization/tokens/:tokenId/reset",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toResetAccessToken"
+    },
+    {
+      "id": "account.authorization.tokens",
+      "label": "Tokens",
+      "routePattern": "/settings/authorization/tokens",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAuthorizationTokens"
+    },
+    {
+      "id": "account.authorization.tokens.new",
+      "label": "New",
+      "routePattern": "/settings/authorization/tokens/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateAccessToken"
+    },
+    {
+      "id": "account.billing",
+      "label": "Billing",
+      "routePattern": "/settings/billing",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toBilling"
+    },
+    {
+      "id": "account.billing.plans",
+      "label": "Plans",
+      "routePattern": "/settings/billing/plans",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toBillingPlans"
+    },
+    {
+      "id": "account.billing.plans.confirmation",
+      "label": "Confirmation",
+      "routePattern": "/settings/billing/plans/confirmation",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toBillingPlanConfirmation"
+    },
+    {
+      "id": "account.billing.plans.customize",
+      "label": "Customize",
+      "routePattern": "/settings/billing/plans/customize",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCustomizeBillingPlan"
+    },
+    {
+      "id": "account.billing.plans.review",
+      "label": "Review",
+      "routePattern": "/settings/billing/plans/review",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toReviewBillingPlan"
+    },
+    {
+      "id": "account.diagnostic-usage",
+      "label": "Diagnostic usage",
+      "routePattern": "/settings/diagnostic-usage",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toDiagnosticUsage"
+    },
+    {
+      "id": "account.diagnostic-usage.detail",
+      "label": "Diagnostic usage detail",
+      "routePattern": "/settings/diagnostic-usage/details/:metric",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toDiagnosticUsageDetails"
+    },
+    {
+      "id": "account.diagnostic-usage.details.overview",
+      "label": "Overview",
+      "routePattern": "/settings/diagnostic-usage/details/overview",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.escalate",
+      "label": "Escalate",
+      "routePattern": "/settings/escalate",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.general",
+      "label": "General",
+      "routePattern": "/settings/general",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAccountSettings"
+    },
+    {
+      "id": "account.history",
+      "label": "History",
+      "routePattern": "/settings/history/*",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAccountHistory"
+    },
+    {
+      "id": "account.integration.new",
+      "label": "New",
+      "routePattern": "/settings/integrations/:kind/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toIntegration"
+    },
+    {
+      "id": "account.integration.show",
+      "label": "Show",
+      "routePattern": "/settings/integrations/:kind/show",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integration.subscription.edit",
+      "label": "Edit",
+      "routePattern": "/settings/integrations/:kind/:subscriptionId/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integration.subscription.errors.view",
+      "label": "View",
+      "routePattern": "/settings/integrations/:kind/:subscriptionId/errors/view",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations",
+      "label": "Integrations",
+      "routePattern": "/settings/integrations",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toIntegrations"
+    },
+    {
+      "id": "account.integrations.coderef.edit",
+      "label": "Edit",
+      "routePattern": "/settings/integrations/coderefs/:id/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations.destination.edit",
+      "label": "Edit",
+      "routePattern": "/settings/integrations/destinations/:destinationId/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations.destinations.new",
+      "label": "New",
+      "routePattern": "/settings/integrations/destinations/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations.sentry.show",
+      "label": "Show",
+      "routePattern": "/settings/integrations/sentry/show",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations.slack.detail.edit",
+      "label": "Edit",
+      "routePattern": "/settings/integrations/slack/:slackHookId/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations.slack.new",
+      "label": "New",
+      "routePattern": "/settings/integrations/slack/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations.webhook.edit",
+      "label": "Edit",
+      "routePattern": "/settings/integrations/webhooks/:webhookId/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.integrations.webhooks.new",
+      "label": "New",
+      "routePattern": "/settings/integrations/webhooks/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.member",
+      "label": "Member",
+      "routePattern": "/settings/members/:memberId",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMember"
+    },
+    {
+      "id": "account.member.history",
+      "label": "History",
+      "routePattern": "/settings/members/:memberId/history/*",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMemberHistory"
+    },
+    {
+      "id": "account.member.permissions",
+      "label": "Permissions",
+      "routePattern": "/settings/members/:memberId/permissions",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMemberPermissions"
+    },
+    {
+      "id": "account.member.settings",
+      "label": "Settings",
+      "routePattern": "/settings/members/:memberId/settings",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMemberSettings"
+    },
+    {
+      "id": "account.member.teams",
+      "label": "Teams",
+      "routePattern": "/settings/members/:memberId/teams",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMemberTeams"
+    },
+    {
+      "id": "account.members",
+      "label": "Members",
+      "routePattern": "/settings/members",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMembers"
+    },
+    {
+      "id": "account.members.invite.detail",
+      "label": "Invite detail",
+      "routePattern": "/settings/members/invite/:inviteEmail?",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.plan-usage",
+      "label": "Plan usage",
+      "routePattern": "/settings/plan-usage",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toPlanUsage"
+    },
+    {
+      "id": "account.plan-usage.detail",
+      "label": "Plan usage detail",
+      "routePattern": "/settings/plan-usage/details/:metric",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toPlanUsageDetails"
+    },
+    {
+      "id": "account.plan-usage.details.overview",
+      "label": "Overview",
+      "routePattern": "/settings/plan-usage/details/overview",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.profile",
+      "label": "Profile",
+      "routePattern": "/settings/profile",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.projects",
+      "label": "Projects",
+      "routePattern": "/settings/projects",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProjects"
+    },
+    {
+      "id": "account.relay",
+      "label": "Relay",
+      "routePattern": "/settings/relay",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toRelayProxies"
+    },
+    {
+      "id": "account.relay.detail.edit",
+      "label": "Edit",
+      "routePattern": "/settings/relay/:id/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toEditRelayProxy"
+    },
+    {
+      "id": "account.relay.new",
+      "label": "New",
+      "routePattern": "/settings/relay/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateRelayProxy"
+    },
+    {
+      "id": "account.role.edit",
+      "label": "Edit",
+      "routePattern": "/settings/roles/:key/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toEditCustomRole"
+    },
+    {
+      "id": "account.role.view",
+      "label": "View",
+      "routePattern": "/settings/roles/:key/view",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewCustomRole"
+    },
+    {
+      "id": "account.roles",
+      "label": "Roles",
+      "routePattern": "/settings/roles",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCustomRoles"
+    },
+    {
+      "id": "account.roles.new",
+      "label": "New",
+      "routePattern": "/settings/roles/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateCustomRole"
+    },
+    {
+      "id": "account.roles.organization",
+      "label": "Organization",
+      "routePattern": "/settings/roles/organization",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toOrganizationRoles"
+    },
+    {
+      "id": "account.roles.organization.detail.view",
+      "label": "View",
+      "routePattern": "/settings/roles/organization/:key/view",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewOrganizationRole"
+    },
+    {
+      "id": "account.roles.project",
+      "label": "Project",
+      "routePattern": "/settings/roles/project",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProjectRoles"
+    },
+    {
+      "id": "account.roles.project.detail.view",
+      "label": "View",
+      "routePattern": "/settings/roles/project/:key/view",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewProjectRole"
+    },
+    {
+      "id": "account.sdk",
+      "label": "SDK",
+      "routePattern": "/settings/sdks/:applicationId",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSdksDetails"
+    },
+    {
+      "id": "account.sdk-keys",
+      "label": "SDK keys",
+      "routePattern": "/settings/sdk-keys",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSdkKeys"
+    },
+    {
+      "id": "account.sdks",
+      "label": "Sdks",
+      "routePattern": "/settings/sdks",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSdks"
+    },
+    {
+      "id": "account.security",
+      "label": "Security",
+      "routePattern": "/settings/security",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSecurity"
+    },
+    {
+      "id": "account.security.saml.config",
+      "label": "Config",
+      "routePattern": "/settings/security/saml/config",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSAMLConfig"
+    },
+    {
+      "id": "account.team",
+      "label": "Team",
+      "routePattern": "/settings/teams/:teamKey",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.team.history",
+      "label": "History",
+      "routePattern": "/settings/teams/:teamKey/history/*",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toTeamHistory"
+    },
+    {
+      "id": "account.team.members",
+      "label": "Members",
+      "routePattern": "/settings/teams/:teamKey/members",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toTeamMembers"
+    },
+    {
+      "id": "account.team.permissions",
+      "label": "Permissions",
+      "routePattern": "/settings/teams/:teamKey/permissions",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toTeamPermissions"
+    },
+    {
+      "id": "account.team.settings",
+      "label": "Settings",
+      "routePattern": "/settings/teams/:teamKey/settings",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toTeamSettings"
+    },
+    {
+      "id": "account.teams",
+      "label": "Teams",
+      "routePattern": "/settings/teams",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toTeams"
+    },
+    {
+      "id": "account.token-limits",
+      "label": "Token limits",
+      "routePattern": "/settings/token-limits",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toTokenLimits"
+    },
+    {
+      "id": "account.tokens",
+      "label": "Tokens",
+      "routePattern": "/settings/tokens/*",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.usage",
+      "label": "Usage",
+      "routePattern": "/settings/usage",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "account.usage.details",
+      "label": "Details",
+      "routePattern": "/settings/usage/details/*",
+      "kind": "route",
+      "owner": "team-billing",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "agentcontrol",
+      "label": "Agentcontrol",
+      "routePattern": "/projects/:projectKey/agentcontrol",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "agentcontrol-welcome",
+      "label": "Agentcontrol welcome",
+      "routePattern": "/projects/:projectKey/agentcontrol-welcome",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigsWelcome"
+    },
+    {
+      "id": "agentcontrol-welcome.setup-sdk",
+      "label": "Setup SDK",
+      "routePattern": "/projects/:projectKey/agentcontrol-welcome/setup-sdk",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigsWelcomeSetupSdk"
+    },
+    {
+      "id": "ai",
+      "label": "AI",
+      "routePattern": "/projects/:projectKey/ai",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILanding"
+    },
+    {
+      "id": "ai-config",
+      "label": "AI config",
+      "routePattern": "/projects/:projectKey/ai-configs/:configKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigShortcut"
+    },
+    {
+      "id": "ai-config.monitoring",
+      "label": "Monitoring",
+      "routePattern": "/projects/:projectKey/ai-configs/:configKey/monitoring",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigMonitoring"
+    },
+    {
+      "id": "ai-config.playground",
+      "label": "Playground",
+      "routePattern": "/projects/:projectKey/ai-configs/:configKey/playground",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigPlayground"
+    },
+    {
+      "id": "ai-config.targeting",
+      "label": "Targeting",
+      "routePattern": "/projects/:projectKey/ai-configs/:configKey/targeting",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigTargeting"
+    },
+    {
+      "id": "ai-config.targeting.pending-changes",
+      "label": "Pending changes",
+      "routePattern": "/projects/:projectKey/ai-configs/:configKey/targeting/pending-changes",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAiConfigPendingChanges"
+    },
+    {
+      "id": "ai-config.variation",
+      "label": "Variation",
+      "routePattern": "/projects/:projectKey/ai-configs/:configKey/variations/:variationKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigCompareView"
+    },
+    {
+      "id": "ai-config.variations",
+      "label": "Variations",
+      "routePattern": "/projects/:projectKey/ai-configs/:configKey/variations",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigVariations"
+    },
+    {
+      "id": "ai-configs",
+      "label": "AI configs",
+      "routePattern": "/projects/:projectKey/ai-configs",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIConfigsShortcut"
+    },
+    {
+      "id": "ai-configs.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/ai-configs/new",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateAIConfig"
+    },
+    {
+      "id": "ai-library",
+      "label": "AI library",
+      "routePattern": "/projects/:projectKey/ai-library",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibrary"
+    },
+    {
+      "id": "ai-library.dataset",
+      "label": "Dataset",
+      "routePattern": "/projects/:projectKey/ai-library/datasets/:datasetKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "ai-library.datasets",
+      "label": "Datasets",
+      "routePattern": "/projects/:projectKey/ai-library/datasets",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibraryDatasets"
+    },
+    {
+      "id": "ai-library.judge-template",
+      "label": "Judge template",
+      "routePattern": "/projects/:projectKey/ai-library/judge-templates/:templateKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibraryJudgeTemplate"
+    },
+    {
+      "id": "ai-library.judge-templates",
+      "label": "Judge templates",
+      "routePattern": "/projects/:projectKey/ai-library/judge-templates",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibraryJudgeTemplates"
+    },
+    {
+      "id": "ai-library.models",
+      "label": "Models",
+      "routePattern": "/projects/:projectKey/ai-library/models",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibraryModels"
+    },
+    {
+      "id": "ai-library.snippet",
+      "label": "Snippet",
+      "routePattern": "/projects/:projectKey/ai-library/snippets/:snippetKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibrarySnippet"
+    },
+    {
+      "id": "ai-library.snippets",
+      "label": "Snippets",
+      "routePattern": "/projects/:projectKey/ai-library/snippets",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibrarySnippets"
+    },
+    {
+      "id": "ai-library.snippets.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/ai-library/snippets/new",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibrarySnippetsNew"
+    },
+    {
+      "id": "ai-library.tool.detail",
+      "label": "Tool detail",
+      "routePattern": "/projects/:projectKey/ai-library/tool/:toolKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibraryTool"
+    },
+    {
+      "id": "ai-library.tools",
+      "label": "Tools",
+      "routePattern": "/projects/:projectKey/ai-library/tools",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAILibraryTools"
+    },
+    {
+      "id": "ai-monitoring",
+      "label": "AI monitoring",
+      "routePattern": "/projects/:projectKey/ai-monitoring",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIMonitoring"
+    },
+    {
+      "id": "ai-monitoring.trends",
+      "label": "Trends",
+      "routePattern": "/projects/:projectKey/ai-monitoring/trends",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIMonitoringTrends"
+    },
+    {
+      "id": "ai.evaluation",
+      "label": "Evaluation",
+      "routePattern": "/projects/:projectKey/ai/evaluation",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIEvaluation"
+    },
+    {
+      "id": "ai.evaluation.run",
+      "label": "Run",
+      "routePattern": "/projects/:projectKey/ai/evaluations/:evaluationId/runs/:runId",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIEvaluationRunDetails"
+    },
+    {
+      "id": "ai.evaluations",
+      "label": "Evaluations",
+      "routePattern": "/projects/:projectKey/ai/evaluations",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toEvaluations"
+    },
+    {
+      "id": "ai.graph",
+      "label": "Graph",
+      "routePattern": "/projects/:projectKey/ai/graphs/:graphKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIAgentGraph"
+    },
+    {
+      "id": "ai.graphs",
+      "label": "Graphs",
+      "routePattern": "/projects/:projectKey/ai/graphs",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIAgentGraphs"
+    },
+    {
+      "id": "ai.optimize-agent",
+      "label": "Optimize agent",
+      "routePattern": "/projects/:projectKey/ai/optimize-agent",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIOptimizeAgentList"
+    },
+    {
+      "id": "ai.optimize-agent.detail",
+      "label": "Optimize agent detail",
+      "routePattern": "/projects/:projectKey/ai/optimize-agent/:optimizationId",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "ai.optimize-agent.detail.configuration",
+      "label": "Configuration",
+      "routePattern": "/projects/:projectKey/ai/optimize-agent/:optimizationId/configuration",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIOptimizeAgentConfiguration"
+    },
+    {
+      "id": "ai.optimize-agent.detail.run",
+      "label": "Run",
+      "routePattern": "/projects/:projectKey/ai/optimize-agent/:optimizationId/runs/:runId",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIOptimizeAgentRun"
+    },
+    {
+      "id": "ai.optimize-agent.detail.runs",
+      "label": "Runs",
+      "routePattern": "/projects/:projectKey/ai/optimize-agent/:optimizationId/runs",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIOptimizeAgentRuns"
+    },
+    {
+      "id": "ai.optimize-agent.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/ai/optimize-agent/new",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAIOptimizeAgentNew"
+    },
+    {
+      "id": "ai.playground",
+      "label": "Playground",
+      "routePattern": "/projects/:projectKey/ai/playgrounds/:evaluationId",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toPlaygroundDetails"
+    },
+    {
+      "id": "ai.playgrounds",
+      "label": "Playgrounds",
+      "routePattern": "/projects/:projectKey/ai/playgrounds",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "ai.playgrounds.active",
+      "label": "Active",
+      "routePattern": "/projects/:projectKey/ai/playgrounds/active",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toPlaygrounds"
+    },
+    {
+      "id": "ai.playgrounds.archived",
+      "label": "Archived",
+      "routePattern": "/projects/:projectKey/ai/playgrounds/archived",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toPlaygroundsArchived"
+    },
+    {
+      "id": "alert",
+      "label": "Alert",
+      "routePattern": "/projects/:projectKey/alerts/:alertId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toAlert"
+    },
+    {
+      "id": "alert.edit",
+      "label": "Edit",
+      "routePattern": "/projects/:projectKey/alerts/:alertId/edit",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toEditAlert"
+    },
+    {
+      "id": "alerts",
+      "label": "Alerts",
+      "routePattern": "/projects/:projectKey/alerts",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toAlerts"
+    },
+    {
+      "id": "alerts.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/alerts/new",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toNewAlert"
+    },
+    {
+      "id": "approval",
+      "label": "Approval",
+      "routePattern": "/projects/:projectKey/approvals/:approvalRequestId",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApproval"
+    },
+    {
+      "id": "approvals",
+      "label": "Approvals",
+      "routePattern": "/projects/:projectKey/approvals",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApprovals"
+    },
+    {
+      "id": "audit",
+      "label": "Audit",
+      "routePattern": "/projects/:projectKey/audit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "audit.detail",
+      "label": "Audit detail",
+      "routePattern": "/projects/:projectKey/audit/:auditId/*",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "compare",
+      "label": "Compare",
+      "routePattern": "/projects/:projectKey/compare",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "compare.detail",
+      "label": "Compare detail",
+      "routePattern": "/projects/:projectKey/compare/:environmentPair",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagComparison"
+    },
+    {
+      "id": "compare.detail.flag",
+      "label": "Flag",
+      "routePattern": "/projects/:projectKey/compare/:environmentPair/flags/:flagKey",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagSync"
+    },
+    {
+      "id": "confirm-auth.detail",
+      "label": "Confirm auth detail",
+      "routePattern": "/confirm-auth/:deviceCode",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "confirm-your-email",
+      "label": "Confirm your email",
+      "routePattern": "/confirm-your-email",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "contexts",
+      "label": "Contexts",
+      "routePattern": "/projects/:projectKey/contexts",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toContexts"
+    },
+    {
+      "id": "contexts.instance",
+      "label": "Instance",
+      "routePattern": "/projects/:projectKey/contexts/instances/:instanceId",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toContextInstance"
+    },
+    {
+      "id": "contexts.kind.instance",
+      "label": "Instance",
+      "routePattern": "/projects/:projectKey/contexts/kinds/:kind/instances/:key",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toContext"
+    },
+    {
+      "id": "contexts.kinds",
+      "label": "Kinds",
+      "routePattern": "/projects/:projectKey/contexts/kinds",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "dashboard",
+      "label": "Dashboard",
+      "routePattern": "/projects/:projectKey/dashboards/:dashboardId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDashboard"
+    },
+    {
+      "id": "dashboard.graph",
+      "label": "Graph",
+      "routePattern": "/projects/:projectKey/dashboards/:dashboardId/:graphId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDashboardGraph"
+    },
+    {
+      "id": "dashboard.graph.edit",
+      "label": "Edit",
+      "routePattern": "/projects/:projectKey/dashboards/:dashboardId/:graphId/edit",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDashboardGraphEdit"
+    },
+    {
+      "id": "dashboard.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/dashboards/:dashboardId/new",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDashboardsGraphNew"
+    },
+    {
+      "id": "dashboards",
+      "label": "Dashboards",
+      "routePattern": "/projects/:projectKey/dashboards",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDashboards"
+    },
+    {
+      "id": "dashboards.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/dashboards/new",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDashboardsNew"
+    },
+    {
+      "id": "data-sources",
+      "label": "Data sources",
+      "routePattern": "/projects/:projectKey/data-sources",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "data-sources.assignment.details",
+      "label": "Details",
+      "routePattern": "/projects/:projectKey/data-sources/assignments/:dataSourceKey/details",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toDataSourcesAssignmentDetails"
+    },
+    {
+      "id": "data-sources.assignments",
+      "label": "Assignments",
+      "routePattern": "/projects/:projectKey/data-sources/assignments",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toDataSourcesAssignments"
+    },
+    {
+      "id": "data-sources.metric.details",
+      "label": "Details",
+      "routePattern": "/projects/:projectKey/data-sources/metrics/:dataSourceKey/details",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDataSourcesMetricDetails"
+    },
+    {
+      "id": "data-sources.metrics",
+      "label": "Data sources",
+      "routePattern": "/projects/:projectKey/data-sources/metrics",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toDataSources"
+    },
+    {
+      "id": "error",
+      "label": "Error",
+      "routePattern": "/projects/:projectKey/errors/:issueId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toError"
+    },
+    {
+      "id": "error.instance",
+      "label": "Instance",
+      "routePattern": "/projects/:projectKey/errors/:issueId/instances/:instanceId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toErrorInstance"
+    },
+    {
+      "id": "error.instances",
+      "label": "Instances",
+      "routePattern": "/projects/:projectKey/errors/:issueId/instances",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toErrorInstances"
+    },
+    {
+      "id": "errors",
+      "label": "Errors",
+      "routePattern": "/projects/:projectKey/errors",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toErrors"
+    },
+    {
+      "id": "experiment",
+      "label": "Experiment",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "experiment.analytics",
+      "label": "Analytics",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/analytics",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperimentAnalytics"
+    },
+    {
+      "id": "experiment.design",
+      "label": "Design",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/design",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperimentDesign"
+    },
+    {
+      "id": "experiment.design.pending-changes",
+      "label": "Pending changes",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/design/pending-changes",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "experiment.details",
+      "label": "Details",
+      "routePattern": "/projects/:projectKey/experiments/:experimentId/details",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "experiment.download-pdf",
+      "label": "Download PDF",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/download-pdf",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "experiment.exposures",
+      "label": "Exposures",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/exposures",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperimentExposures"
+    },
+    {
+      "id": "experiment.iteration",
+      "label": "Iteration",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/iterations/:iterationId",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperimentIteration"
+    },
+    {
+      "id": "experiment.iterations",
+      "label": "Iterations",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/iterations",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperimentIterations"
+    },
+    {
+      "id": "experiment.results",
+      "label": "Results",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/results",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperimentResults"
+    },
+    {
+      "id": "experiment.results.pending-changes",
+      "label": "Pending changes",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/results/pending-changes",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "experiment.traffic",
+      "label": "Traffic",
+      "routePattern": "/projects/:projectKey/experiments/:experimentKey/traffic",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperimentTraffic"
+    },
+    {
+      "id": "experiments",
+      "label": "Experiments",
+      "routePattern": "/projects/:projectKey/experiments",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toExperiments"
+    },
+    {
+      "id": "experiments.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/experiments/new",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toCreateExperiment"
+    },
+    {
+      "id": "flag",
+      "label": "Flag",
+      "routePattern": "/projects/:projectKey/flags/:flagKey",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlag"
+    },
+    {
+      "id": "flag.add-to-code",
+      "label": "Add to code",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/add-to-code",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toAddToCode"
+    },
+    {
+      "id": "flag.approval",
+      "label": "Approval",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/approvals/:approvalRequestId",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagApproval"
+    },
+    {
+      "id": "flag.audience",
+      "label": "Audience",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/audience",
+      "kind": "route",
+      "owner": "team-release-guardian",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagAudience"
+    },
+    {
+      "id": "flag.cleanup",
+      "label": "Cleanup",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/cleanup",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagCleanup"
+    },
+    {
+      "id": "flag.code-refs",
+      "label": "Code refs",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/code-refs",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagCodeReferences"
+    },
+    {
+      "id": "flag.environment-overview",
+      "label": "Environment overview",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/environment-overview",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagOverview"
+    },
+    {
+      "id": "flag.environments",
+      "label": "Environments",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/environments",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagEnvironmentSettings"
+    },
+    {
+      "id": "flag.environments.exclude-rules",
+      "label": "Exclude rules",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/environments/exclude-rules",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "flag.experiments",
+      "label": "Experiments",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/experiments/*",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "flag.feedback",
+      "label": "Feedback",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/feedback",
+      "kind": "route",
+      "owner": "team-release-monitoring",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagUserFeedback"
+    },
+    {
+      "id": "flag.history",
+      "label": "History",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/history",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "flag.history.detail",
+      "label": "History detail",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/history/:auditId/*",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "flag.insights",
+      "label": "Insights",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/insights",
+      "kind": "route",
+      "owner": "team-release-monitoring",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "flag.links",
+      "label": "Links",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/links",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagLinks"
+    },
+    {
+      "id": "flag.monitoring",
+      "label": "Monitoring",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/monitoring",
+      "kind": "route",
+      "owner": "team-release-monitoring",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagMonitoring"
+    },
+    {
+      "id": "flag.settings",
+      "label": "Settings",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/settings",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagSettings"
+    },
+    {
+      "id": "flag.settings.archive",
+      "label": "Archive",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/settings/archive",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toArchiveFlagFromSettings"
+    },
+    {
+      "id": "flag.settings.deprecate",
+      "label": "Deprecate",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/settings/deprecate",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toDeprecateFlagFromList"
+    },
+    {
+      "id": "flag.targeting",
+      "label": "Targeting",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/targeting",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagTargeting"
+    },
+    {
+      "id": "flag.targeting.conflict",
+      "label": "Conflict",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/targeting/conflicts/:conflictIndex",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagTargetingConflict"
+    },
+    {
+      "id": "flag.targeting.exclude-rules",
+      "label": "Exclude rules",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/targeting/exclude-rules",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagExcludeRules"
+    },
+    {
+      "id": "flag.targeting.expiring-target",
+      "label": "Expiring target",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/targeting/expiring-targets/:expiringId",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagExpiringTarget"
+    },
+    {
+      "id": "flag.targeting.expiring-targets",
+      "label": "Expiring targets",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/targeting/expiring-targets",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagExpiringTargets"
+    },
+    {
+      "id": "flag.targeting.pending-change",
+      "label": "Pending change",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/targeting/pending-changes/:pendingId",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagPendingChange"
+    },
+    {
+      "id": "flag.targeting.pending-changes",
+      "label": "Pending changes",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/targeting/pending-changes",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagPendingTargetingChanges"
+    },
+    {
+      "id": "flag.variations",
+      "label": "Variations",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/variations",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagVariations"
+    },
+    {
+      "id": "flag.variations.conflict",
+      "label": "Conflict",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/variations/conflicts/:conflictIndex",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagVariationConflict"
+    },
+    {
+      "id": "flag.variations.pending-change",
+      "label": "Pending change",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/variations/pending-changes/:pendingId",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "flag.variations.pending-changes",
+      "label": "Pending changes",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/variations/pending-changes",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagVariationPendingChanges"
+    },
+    {
+      "id": "flag.workflow",
+      "label": "Workflow",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/workflows/:workflowId",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagWorkflow"
+    },
+    {
+      "id": "flag.workflows",
+      "label": "Workflows",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/workflows",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagWorkflows"
+    },
+    {
+      "id": "flag.workflows.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/flags/:flagKey/workflows/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateFlagWorkflow"
+    },
+    {
+      "id": "flags",
+      "label": "Flags",
+      "routePattern": "/projects/:projectKey/flags",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlags"
+    },
+    {
+      "id": "flags.connect",
+      "label": "Connect",
+      "routePattern": "/projects/:projectKey/flags/connect",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "flags.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/flags/new",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateFlag"
+    },
+    {
+      "id": "get-started",
+      "label": "Get started",
+      "routePattern": "/projects/:projectKey/get-started",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toGettingStarted"
+    },
+    {
+      "id": "get-started.invite-members",
+      "label": "Invite members",
+      "routePattern": "/projects/:projectKey/get-started/invite-members",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toInviteMembers"
+    },
+    {
+      "id": "get-started.quickstart",
+      "label": "Quickstart",
+      "routePattern": "/projects/:projectKey/get-started/quickstart",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toQuickstart"
+    },
+    {
+      "id": "get-started.setup-cli",
+      "label": "Setup CLI",
+      "routePattern": "/projects/:projectKey/get-started/setup-cli",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSetupCLI"
+    },
+    {
+      "id": "guarded-rollouts",
+      "label": "Guarded rollouts",
+      "routePattern": "/projects/:projectKey/guarded-rollouts",
+      "kind": "route",
+      "owner": "team-release-guardian",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toGuardedRollouts"
+    },
+    {
+      "id": "holdout",
+      "label": "Holdout",
+      "routePattern": "/projects/:projectKey/holdouts/:holdoutKey",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "holdout.design",
+      "label": "Design",
+      "routePattern": "/projects/:projectKey/holdouts/:holdoutKey/design",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toHoldoutDesign"
+    },
+    {
+      "id": "holdout.details",
+      "label": "Details",
+      "routePattern": "/projects/:projectKey/holdouts/:holdoutKey/details",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toHoldoutDetails"
+    },
+    {
+      "id": "holdouts",
+      "label": "Holdouts",
+      "routePattern": "/projects/:projectKey/holdouts",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toHoldoutsRoot"
+    },
+    {
+      "id": "holdouts.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/holdouts/new",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toCreateHoldout"
+    },
+    {
+      "id": "home",
+      "label": "Home",
+      "routePattern": "/",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toRoot"
+    },
+    {
+      "id": "insights",
+      "label": "Insights",
+      "routePattern": "/insights",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toInsights"
+    },
+    {
+      "id": "internal.new-hires",
+      "label": "New hires",
+      "routePattern": "/internal/new-hires",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "launchlitely",
+      "label": "Launchlitely",
+      "routePattern": "/launchlitely",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "launchlitely.detail",
+      "label": "Launchlitely detail",
+      "routePattern": "/launchlitely/:projectKey",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "live",
+      "label": "Live events",
+      "routePattern": "/projects/:projectKey/live",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toLiveEvents"
+    },
+    {
+      "id": "live.flag",
+      "label": "Flag",
+      "routePattern": "/projects/:projectKey/live/flags/:flagKey",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toLiveFlagEvents"
+    },
+    {
+      "id": "logs",
+      "label": "Logs",
+      "routePattern": "/projects/:projectKey/logs",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toLogs"
+    },
+    {
+      "id": "metric-data-source.details",
+      "label": "Details",
+      "routePattern": "/projects/:projectKey/metric-data-sources/:dataSourceKey/details",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMetricDataSourceDetails"
+    },
+    {
+      "id": "metric-data-sources",
+      "label": "Metric data sources",
+      "routePattern": "/projects/:projectKey/metric-data-sources",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMetricDataSourcesSettings"
+    },
+    {
+      "id": "metric-data-sources.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/metric-data-sources/new",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toCreateMetricDataSource"
+    },
+    {
+      "id": "metric.details",
+      "label": "Details",
+      "routePattern": "/projects/:projectKey/metrics/:metricKey/details",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMetricDetails"
+    },
+    {
+      "id": "metrics",
+      "label": "Metrics",
+      "routePattern": "/projects/:projectKey/metrics",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMetrics"
+    },
+    {
+      "id": "metrics.group.details",
+      "label": "Details",
+      "routePattern": "/projects/:projectKey/metrics/groups/:metricGroupKey/details",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toMetricGroup"
+    },
+    {
+      "id": "metrics.groups",
+      "label": "Groups",
+      "routePattern": "/projects/:projectKey/metrics/groups",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "metrics.groups.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/metrics/groups/new",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateMetricGroup"
+    },
+    {
+      "id": "metrics.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/metrics/new",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateMetric"
+    },
+    {
+      "id": "multi-armed-bandit",
+      "label": "Multi armed bandit",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits/:multiArmedBanditKey",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "multi-armed-bandit.design",
+      "label": "Design",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits/:multiArmedBanditKey/design",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMultiArmedBanditDesign"
+    },
+    {
+      "id": "multi-armed-bandit.exposures",
+      "label": "Exposures",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits/:multiArmedBanditKey/exposures",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMultiArmedBanditExposures"
+    },
+    {
+      "id": "multi-armed-bandit.iteration",
+      "label": "Iteration",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits/:multiArmedBanditKey/iterations/:iterationId",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMultiArmedBanditIteration"
+    },
+    {
+      "id": "multi-armed-bandit.iterations",
+      "label": "Iterations",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits/:multiArmedBanditKey/iterations",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMultiArmedBanditIterations"
+    },
+    {
+      "id": "multi-armed-bandit.results",
+      "label": "Results",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits/:multiArmedBanditKey/results",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMultiArmedBanditResults"
+    },
+    {
+      "id": "multi-armed-bandits",
+      "label": "Multi-armed bandits",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toMultiArmedBandits"
+    },
+    {
+      "id": "multi-armed-bandits.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/multi-armed-bandits/new",
+      "kind": "route",
+      "owner": "team-experimentation",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toCreateMultiArmedBandit"
+    },
+    {
+      "id": "observability-metrics",
+      "label": "Observability metrics",
+      "routePattern": "/projects/:projectKey/observability-metrics",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toObservabilityMetrics"
+    },
+    {
+      "id": "observe",
+      "label": "Event explorer",
+      "routePattern": "/projects/:projectKey/observe",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toObserve"
+    },
+    {
+      "id": "observe.expand.detail.event-kind.event",
+      "label": "Event",
+      "routePattern": "/projects/:projectKey/observe/expand/:dataSourceKey/:eventKind/:eventKey",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toObserveExpand"
+    },
+    {
+      "id": "observe.new-metric",
+      "label": "New metric",
+      "routePattern": "/projects/:projectKey/observe/new-metric",
+      "kind": "route",
+      "owner": "team-metrics",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toObserveNewMetric"
+    },
+    {
+      "id": "product-analytics",
+      "label": "Product analytics",
+      "routePattern": "/projects/:projectKey/product-analytics",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toInternalUrl"
+    },
+    {
+      "id": "product-analytics.chart",
+      "label": "Chart",
+      "routePattern": "/projects/:projectKey/product-analytics/charts/:id",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.charts",
+      "label": "Charts",
+      "routePattern": "/projects/:projectKey/product-analytics/charts",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.charts.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/product-analytics/charts/new",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.cohort",
+      "label": "Cohort",
+      "routePattern": "/projects/:projectKey/product-analytics/cohorts/:id",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.cohort.edit",
+      "label": "Edit",
+      "routePattern": "/projects/:projectKey/product-analytics/cohorts/:id/edit",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.cohorts",
+      "label": "Cohorts",
+      "routePattern": "/projects/:projectKey/product-analytics/cohorts",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.cohorts.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/product-analytics/cohorts/new",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.dashboard",
+      "label": "Dashboard",
+      "routePattern": "/projects/:projectKey/product-analytics/dashboards/:id",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.dashboards",
+      "label": "Dashboards",
+      "routePattern": "/projects/:projectKey/product-analytics/dashboards",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.dashboards.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/product-analytics/dashboards/new",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.events",
+      "label": "Events",
+      "routePattern": "/projects/:projectKey/product-analytics/events",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.integration",
+      "label": "Integration",
+      "routePattern": "/product-analytics/integrations/:warehouseId",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.user-activity",
+      "label": "User activity",
+      "routePattern": "/projects/:projectKey/product-analytics/user-activity",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.user-attributes",
+      "label": "User attributes",
+      "routePattern": "/projects/:projectKey/product-analytics/user-attributes",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.visualization",
+      "label": "Visualization",
+      "routePattern": "/projects/:projectKey/product-analytics/visualizations/:id",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "product-analytics.visualizations.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/product-analytics/visualizations/new",
+      "kind": "route",
+      "owner": "team-product-analytics",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "routePattern": "/profile",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProfile"
+    },
+    {
+      "id": "project.home",
+      "label": "Home",
+      "routePattern": "/projects/:projectKey",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProjectHome"
+    },
+    {
+      "id": "release",
+      "label": "Release",
+      "routePattern": "/projects/:projectKey/releases/:releasePipelineKey",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toReleases"
+    },
+    {
+      "id": "releases",
+      "label": "Releases",
+      "routePattern": "/projects/:projectKey/releases",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toReleasesList"
+    },
+    {
+      "id": "sdk-setup",
+      "label": "SDK setup",
+      "routePattern": "/projects/:projectKey/sdk-setup",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSdkSetup"
+    },
+    {
+      "id": "segment",
+      "label": "Segment",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "segment.flags",
+      "label": "Flags",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey/flags",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "segment.history",
+      "label": "History",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey/history/*",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSegmentHistory"
+    },
+    {
+      "id": "segment.history.detail",
+      "label": "History detail",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey/history/:auditId/*",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "segment.overview",
+      "label": "Overview",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey/overview",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSegmentFlags"
+    },
+    {
+      "id": "segment.settings",
+      "label": "Settings",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey/settings",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSegmentSettings"
+    },
+    {
+      "id": "segment.targeting",
+      "label": "Targeting",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey/targeting",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSegmentTargeting"
+    },
+    {
+      "id": "segment.targeting.export",
+      "label": "Export",
+      "routePattern": "/projects/:projectKey/segments/:segmentKey/targeting/exports/:exportKey",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "segments",
+      "label": "Segments",
+      "routePattern": "/projects/:projectKey/segments",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toSegments"
+    },
+    {
+      "id": "segments.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/segments/new",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateSegment"
+    },
+    {
+      "id": "session",
+      "label": "Session",
+      "routePattern": "/projects/:projectKey/sessions/:sessionId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toSession"
+    },
+    {
+      "id": "sessions",
+      "label": "Sessions",
+      "routePattern": "/projects/:projectKey/sessions",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toSessions"
+    },
+    {
+      "id": "settings",
+      "label": "Settings",
+      "routePattern": "/projects/:projectKey/settings",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProjectSettings"
+    },
+    {
+      "id": "settings.approvals",
+      "label": "Approvals",
+      "routePattern": "/projects/:projectKey/settings/approvals",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toApprovalSettings"
+    },
+    {
+      "id": "settings.context-kinds",
+      "label": "Context kinds",
+      "routePattern": "/projects/:projectKey/settings/context-kinds",
+      "kind": "route",
+      "owner": "team-fm-foundations",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toContextKinds"
+    },
+    {
+      "id": "settings.environment",
+      "label": "Environment",
+      "routePattern": "/projects/:projectKey/settings/environments/:envKey",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "settings.environment.approval-settings",
+      "label": "Approval settings",
+      "routePattern": "/projects/:projectKey/settings/environments/:envKey/approval-settings",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProjectEnvironmentApprovalSettings"
+    },
+    {
+      "id": "settings.environment.edit",
+      "label": "Edit",
+      "routePattern": "/projects/:projectKey/settings/environments/:envKey/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toEditProjectEnvironment"
+    },
+    {
+      "id": "settings.environment.keys",
+      "label": "Keys",
+      "routePattern": "/projects/:projectKey/settings/environments/:envKey/keys",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProjectEnvironmentKeys"
+    },
+    {
+      "id": "settings.environments",
+      "label": "Environments",
+      "routePattern": "/projects/:projectKey/settings/environments",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toProjectEnvironments"
+    },
+    {
+      "id": "settings.environments.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/settings/environments/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateEnvironment"
+    },
+    {
+      "id": "settings.flags",
+      "label": "Flags",
+      "routePattern": "/projects/:projectKey/settings/flags",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagDefaults"
+    },
+    {
+      "id": "settings.lifecycle",
+      "label": "Lifecycle",
+      "routePattern": "/projects/:projectKey/settings/lifecycle",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toFlagLifecycleSettings"
+    },
+    {
+      "id": "settings.model-config",
+      "label": "Model config",
+      "routePattern": "/projects/:projectKey/settings/model-configs/:configKey",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toModelConfig"
+    },
+    {
+      "id": "settings.model-configs",
+      "label": "Model configs",
+      "routePattern": "/projects/:projectKey/settings/model-configs",
+      "kind": "route",
+      "owner": "team-ai-configs",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toModelConfigs"
+    },
+    {
+      "id": "settings.observability",
+      "label": "Observability",
+      "routePattern": "/projects/:projectKey/settings/observability",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toObservabilitySettings"
+    },
+    {
+      "id": "settings.observability.filter-rule",
+      "label": "Filter rule",
+      "routePattern": "/projects/:projectKey/settings/observability/filter-rules/:product",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toObservabilityFilterRulesSettings"
+    },
+    {
+      "id": "settings.payload-filter.edit",
+      "label": "Edit",
+      "routePattern": "/projects/:projectKey/settings/payload-filters/:filterKey/edit",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toEditPayloadFilter"
+    },
+    {
+      "id": "settings.payload-filters",
+      "label": "Payload filters",
+      "routePattern": "/projects/:projectKey/settings/payload-filters",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toPayloadFiltersSettings"
+    },
+    {
+      "id": "settings.release-pipeline",
+      "label": "Release pipeline",
+      "routePattern": "/projects/:projectKey/settings/release-pipelines/:releasePipelineKey",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "settings.release-pipelines",
+      "label": "Release pipelines",
+      "routePattern": "/projects/:projectKey/settings/release-pipelines",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "settings.release-pipelines.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/settings/release-pipelines/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "settings.releases",
+      "label": "Release assistant",
+      "routePattern": "/projects/:projectKey/settings/releases",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toReleaseSettings"
+    },
+    {
+      "id": "settings.releases.release-pipeline",
+      "label": "Release pipeline",
+      "routePattern": "/projects/:projectKey/settings/releases/release-pipelines/:releasePipelineKey",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toReleasePipeline"
+    },
+    {
+      "id": "settings.releases.release-pipelines",
+      "label": "Release pipelines",
+      "routePattern": "/projects/:projectKey/settings/releases/release-pipelines",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "settings.releases.release-pipelines.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/settings/releases/release-pipelines/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toCreateReleasePipeline"
+    },
+    {
+      "id": "settings.releases.release-policies",
+      "label": "Release policies",
+      "routePattern": "/projects/:projectKey/settings/releases/release-policies",
+      "kind": "route",
+      "owner": "team-release-guardian",
+      "gated": true,
+      "source": "generated"
+    },
+    {
+      "id": "settings.releases.release-policies.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/settings/releases/release-policies/new",
+      "kind": "route",
+      "owner": "team-release-guardian",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toCreateReleasePolicy"
+    },
+    {
+      "id": "settings.releases.release-policy",
+      "label": "Release policy",
+      "routePattern": "/projects/:projectKey/settings/releases/release-policies/:releasePolicyKey",
+      "kind": "route",
+      "owner": "team-release-guardian",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toReleasePolicy"
+    },
+    {
+      "id": "settings.view",
+      "label": "View",
+      "routePattern": "/projects/:projectKey/settings/views/:viewKey",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "settings.view.link",
+      "label": "Link",
+      "routePattern": "/projects/:projectKey/settings/views/:viewKey/link",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "settings.view.linked-resource",
+      "label": "Linked resource",
+      "routePattern": "/projects/:projectKey/settings/views/:viewKey/linked-resources/:resource",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewLinkedResources"
+    },
+    {
+      "id": "settings.view.linked-resource.add",
+      "label": "Add",
+      "routePattern": "/projects/:projectKey/settings/views/:viewKey/linked-resources/:resource/add",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewAddLinkedResources"
+    },
+    {
+      "id": "settings.view.linked-resources",
+      "label": "Linked resources",
+      "routePattern": "/projects/:projectKey/settings/views/:viewKey/linked-resources",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewDetail"
+    },
+    {
+      "id": "settings.view.settings",
+      "label": "Settings",
+      "routePattern": "/projects/:projectKey/settings/views/:viewKey/settings",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewSettings"
+    },
+    {
+      "id": "settings.views",
+      "label": "Views",
+      "routePattern": "/projects/:projectKey/settings/views",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViews"
+    },
+    {
+      "id": "settings.views.new",
+      "label": "New",
+      "routePattern": "/projects/:projectKey/settings/views/new",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toCreateView"
+    },
+    {
+      "id": "settings.views.settings",
+      "label": "Settings",
+      "routePattern": "/projects/:projectKey/settings/views/settings",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toViewsSettings"
+    },
+    {
+      "id": "traces",
+      "label": "Traces",
+      "routePattern": "/projects/:projectKey/traces",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": true,
+      "source": "generated",
+      "navigator": "toTraces"
+    },
+    {
+      "id": "vega",
+      "label": "Vega",
+      "routePattern": "/projects/:projectKey/vega",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toVega"
+    },
+    {
+      "id": "vega.artifact.external",
+      "label": "External",
+      "routePattern": "/projects/:projectKey/vega/artifacts/:type/:externalId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated"
+    },
+    {
+      "id": "vega.detail",
+      "label": "Vega detail",
+      "routePattern": "/projects/:projectKey/vega/:conversationId",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toVegaConversation"
+    },
+    {
+      "id": "vega.history",
+      "label": "History",
+      "routePattern": "/projects/:projectKey/vega/history",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toVegaHistory"
+    },
+    {
+      "id": "vega.settings",
+      "label": "Settings",
+      "routePattern": "/projects/:projectKey/vega/settings",
+      "kind": "route",
+      "owner": "team-o11y",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toVegaSettings"
+    },
+    {
+      "id": "verify-email",
+      "label": "Verify email",
+      "routePattern": "/verify-email",
+      "kind": "route",
+      "owner": "team-enterprise",
+      "gated": false,
+      "source": "generated",
+      "navigator": "toVerifyEmail"
+    }
+  ]
+}

@@ -1,0 +1,287 @@
+# Curated non-route destinations.
+#
+# These are places a user would describe as "somewhere I go" that do not change
+# the URL. Every entry below was found in gonfalon source, not invented; the
+# `source` field names the file so any inclusion can be checked or argued with.
+#
+# Deliberately excluded: confirmation dialogs, form validation states, and
+# multi-step form panes. Roughly 835 files in gonfalon contain a dialog, drawer,
+# or popover component and almost none of them are destinations in a sense a
+# participant would recognize.
+#
+# `reachableFrom` is documentation for scheme authors, not an input to scoring.
+# Scoring uses only where a scheme places the destination.
+
+# --- Global chrome -----------------------------------------------------------
+
+- id: chrome.create-menu
+  label: Create menu
+  kind: palette
+  reachableFrom: home
+  source: packages/chrome/src/internal/useCreateMenuItems.ts
+  note: The global create affordance. Offers Flag, Segment, Experiment, Config, Chart, Multi-armed Bandit, View.
+
+- id: chrome.project-switcher
+  label: Switch project
+  kind: switcher
+  reachableFrom: home
+  source: packages/chrome/src/internal/ProjectSwitcher
+
+- id: chrome.project-view-switcher
+  label: Projects and views
+  kind: switcher
+  reachableFrom: home
+  source: packages/chrome/src/internal/ProjectViewSwitcher
+
+- id: chrome.environment-selector
+  label: Selected environments
+  kind: switcher
+  reachableFrom: home
+  source: packages/chrome/src/internal/EnvironmentSelector
+
+- id: chrome.environment-add
+  label: View another environment
+  kind: switcher
+  reachableFrom: chrome.environment-selector
+  source: packages/chrome/src/internal/EnvironmentSelector
+
+- id: chrome.environment-swap
+  label: Swap environment
+  kind: switcher
+  reachableFrom: chrome.environment-selector
+  source: packages/chrome/src/internal/EnvironmentSelector
+
+- id: chrome.environment-actions
+  label: More environment actions
+  kind: switcher
+  reachableFrom: chrome.environment-selector
+  source: packages/chrome/src/internal/EnvironmentSelector
+
+- id: chrome.session-menu
+  label: Session menu
+  kind: palette
+  reachableFrom: home
+  source: packages/chrome/src/internal/SessionMenu
+
+- id: chrome.shortcuts
+  label: Shortcuts
+  kind: palette
+  reachableFrom: home
+  source: packages/chrome/src/internal/ShortcutsTrigger
+
+- id: chrome.shortcuts-nav
+  label: Pinned shortcuts
+  kind: palette
+  reachableFrom: home
+  source: packages/chrome/src/internal/ShortcutsNavSection
+
+- id: chrome.change-history
+  label: Show change history
+  kind: drawer
+  reachableFrom: home
+  source: packages/chrome/src/internal/ChangeHistoryTrigger
+
+- id: chrome.views
+  label: Views
+  kind: switcher
+  reachableFrom: home
+  source: packages/chrome/src/internal/Views
+
+- id: chrome.views-filter
+  label: Filter views
+  kind: drawer
+  reachableFrom: chrome.views
+  source: packages/chrome/src/internal/ViewsFilter
+
+- id: chrome.install-sdk
+  label: Install SDK
+  kind: drawer
+  reachableFrom: home
+  source: packages/chrome/src/internal/InstallSDK
+
+- id: chrome.trial-status
+  label: Trial status
+  kind: drawer
+  reachableFrom: home
+  source: packages/chrome/src/internal/TrialStatus
+
+- id: chrome.announcements
+  label: Announcements
+  kind: drawer
+  reachableFrom: home
+  source: packages/chrome/src/internal/AnnouncementBannerWrapper.tsx
+
+- id: chrome.nav-mode-switcher
+  label: Navigation mode
+  kind: switcher
+  reachableFrom: home
+  source: packages/chrome/src/internal/Navigation/NavModeSwitcher.tsx
+
+# --- Collection page controls ------------------------------------------------
+
+- id: collection.filters
+  label: Filters
+  kind: drawer
+  reachableFrom: flags
+  source: packages/chrome/src/internal/Filters
+
+- id: collection.ordering
+  label: Ordering
+  kind: switcher
+  reachableFrom: flags
+  source: packages/chrome/src/internal/Ordering
+
+- id: collection.display-preferences
+  label: Display preferences
+  kind: drawer
+  reachableFrom: flags
+  source: packages/chrome/src/internal/DisplayPreferences
+
+- id: collection.environment-filters
+  label: Environment filters
+  kind: drawer
+  reachableFrom: flags
+  source: packages/chrome/src/internal/EnvironmentFilters
+
+# --- Flag targeting sections -------------------------------------------------
+# Sections within the targeting page. Confirmed section identifiers in
+# packages/flag-targeting/src: prerequisites, individualTargets, rules,
+# fallthrough, off-variation.
+
+- id: flag.targeting.prerequisites
+  label: Prerequisites
+  kind: tab
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src
+
+- id: flag.targeting.individual-targets
+  label: Individual targets
+  kind: tab
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src
+
+- id: flag.targeting.rules
+  label: Targeting rules
+  kind: tab
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src
+
+- id: flag.targeting.fallthrough
+  label: Default rule
+  kind: tab
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src
+
+- id: flag.targeting.off-variation
+  label: Off variation
+  kind: tab
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src
+
+- id: flag.targeting.pending-changes-drawer
+  label: Pending changes
+  kind: drawer
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src/ui/PendingChangesDrawer
+
+- id: flag.targeting.review
+  label: Review and save
+  kind: drawer
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src/ui/FlagTargetingReviewModal
+
+- id: flag.targeting.mode
+  label: Targeting mode
+  kind: switcher
+  reachableFrom: flag.targeting
+  source: packages/flag-targeting/src/ui/modes
+
+# --- Flag detail sidebar -----------------------------------------------------
+# Panels on the flag detail sidebar. Several duplicate a route, which is the
+# point: the sidebar is a shortcut surface and duplication is measurable.
+
+- id: flag.sidebar.description
+  label: Description
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+- id: flag.sidebar.tags
+  label: Tags
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+- id: flag.sidebar.variations
+  label: Variations
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+- id: flag.sidebar.code-references
+  label: Code references
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+- id: flag.sidebar.experiments
+  label: Experiments
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+- id: flag.sidebar.workflows
+  label: Workflows
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+- id: flag.sidebar.pending-changes
+  label: Pending changes
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+- id: flag.sidebar.add-to-code
+  label: Add flag to code
+  kind: tab
+  reachableFrom: flag
+  source: static/ld/components/FlagEntitySidebar
+
+# --- Entity sidebars elsewhere ----------------------------------------------
+
+- id: experiment.sidebar
+  label: Experiment details panel
+  kind: tab
+  reachableFrom: experiment
+  source: static/ld/components/experimentation/common/components/ExperimentSidebar
+
+- id: holdout.sidebar
+  label: Holdout properties
+  kind: tab
+  reachableFrom: holdout
+  source: static/ld/components/experimentation/common/components/HoldoutEntityProperties/Sidebar
+
+- id: ai-config.playground-sidebar
+  label: Playground panel
+  kind: tab
+  reachableFrom: ai-config.playground
+  source: static/ld/components/AiConfigs/Playgrounds/PlaygroundSidebar
+
+- id: ai.evaluation-sidebar
+  label: Evaluation details panel
+  kind: tab
+  reachableFrom: ai.evaluation
+  source: static/ld/components/AiConfigs/EvaluationDetails/EvaluationDetailsSidebar
+
+- id: data-source.sidebar
+  label: Data source details panel
+  kind: tab
+  reachableFrom: data-sources
+  source: static/ld/components/DataSources/DataSourceDetails/DetailsSidebar
+
+- id: ai-monitoring.sidebar
+  label: AI monitoring panel
+  kind: tab
+  reachableFrom: ai-monitoring
+  source: static/ld/components/AiMonitoring/AiMonitoringTrends/Sidebar
