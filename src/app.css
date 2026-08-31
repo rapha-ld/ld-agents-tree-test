@@ -133,8 +133,47 @@ button.ghost:hover { color: var(--ink); }
 
 .prompt { margin: 0.25rem 0 1.25rem; }
 
-.progress { height: 3px; background: var(--line); border-radius: 2px; margin-bottom: 1rem; }
-.progress .bar { height: 3px; background: var(--accent); border-radius: 2px; transition: width 160ms ease; }
+/* One segment per task in the current scenario, so the remaining work is
+   countable rather than a fraction of a bar. */
+.progress-block { margin-bottom: 1.25rem; }
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.segments { display: flex; gap: 4px; }
+.segment {
+  flex: 1;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  transition: background 160ms ease;
+}
+.segment.filled { background: var(--accent); }
+
+/* Repeated on every task page of a scenario. Quieter than the task prompt on
+   purpose: it is standing context, not the question being asked. */
+.scenario-context {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1.25rem;
+}
+.scenario-context h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.scenario-context p {
+  margin: 0.3rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.scenario-context p:first-of-type { margin-top: 0; }
 
 .modes {
   display: inline-flex;

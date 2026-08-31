@@ -113,7 +113,7 @@ describe('analyze', () => {
     expect(outcome.firstClickRate).toBe(1);
   });
 
-  it('excludes a session that was restarted before finishing', () => {
+  it('keeps a session that was restarted before finishing out of the rates', () => {
     seq = 0;
     const abandoned: StudySession = { ...session('s-quit'), finished_at: null };
     const results: ResultsFile = {
@@ -124,7 +124,15 @@ describe('analyze', () => {
         event('s-quit', 'submit', 'A / X / Y', 'y', 800),
       ],
     };
-    expect(analyze(results, [scheme], [scenario])).toEqual([]);
+
+    // The correct answer here is deliberately ignored: the run never finished,
+    // so it cannot inflate the success rate. It is still reported as a dropout,
+    // because a scheme everyone abandons is the most important thing to see.
+    const [outcome] = analyze(results, [scheme], [scenario]);
+    expect(outcome.attempts).toBe(0);
+    expect(outcome.successRate).toBeNull();
+    expect(outcome.finishedSessions).toBe(0);
+    expect(outcome.abandonedSessions).toBe(1);
   });
 
   it('ignores events whose session or scenario is unknown', () => {
@@ -190,6 +198,100 @@ describe('analyze', () => {
       sessions: [session('s1')],
       events: [event('s1', 'start', '', null, 0), event('s1', 'click', 'A', null, 300)],
     };
-    expect(analyze(results, [scheme], [scenario])).toEqual([]);
+
+    const [outcome] = analyze(results, [scheme], [scenario]);
+    expect(outcome.attempts).toBe(0);
+    expect(outcome.tasks).toEqual([]);
+    // The session itself reached the end, so it is not a dropout.
+    expect(outcome.finishedSessions).toBe(1);
+    expect(outcome.abandonedSessions).toBe(0);
+  });
+
+  /**
+   * Partial runs reach the database but were previously invisible: analyze drops
+   * any session without a finished_at, so an abandoned run counted for nothing.
+   * These cover the dropout figures that surface them.
+   */
+  describe('dropout', () => {
+    const unfinished = (id: string): StudySession => ({ ...session(id), finished_at: null });
+
+    it('counts started, finished, and abandoned separately', () => {
+      seq = 0;
+      const results: ResultsFile = {
+        sessions: [session('done-1'), session('done-2'), unfinished('quit-1')],
+        events: [
+          event('done-1', 'start', '', null, 0),
+          event('done-1', 'submit', 'A / X / Y', 'y', 1000),
+          event('done-2', 'start', '', null, 0),
+          event('done-2', 'submit', 'A / X / Y', 'y', 1000),
+          event('quit-1', 'start', '', null, 0),
+        ],
+      };
+
+      const [outcome] = analyze(results, [scheme], [scenario]);
+      expect(outcome.startedSessions).toBe(3);
+      expect(outcome.finishedSessions).toBe(2);
+      expect(outcome.abandonedSessions).toBe(1);
+    });
+
+    it('keeps an abandoned run out of the success rate', () => {
+      seq = 0;
+      const results: ResultsFile = {
+        sessions: [session('done-1'), unfinished('quit-1')],
+        events: [
+          event('done-1', 'start', '', null, 0),
+          event('done-1', 'submit', 'A / X / Y', 'y', 1000),
+          // A wrong answer that must not drag the rate down, because this run
+          // never finished.
+          event('quit-1', 'start', '', null, 0),
+          event('quit-1', 'submit', 'B / Z', 'z', 1000),
+        ],
+      };
+
+      const [outcome] = analyze(results, [scheme], [scenario]);
+      expect(outcome.attempts).toBe(1);
+      expect(outcome.successRate).toBe(1);
+    });
+
+    it('reports the median number of tasks reached before quitting', () => {
+      seq = 0;
+      const twoTasks = parseScenario(
+        '---\nid: s1\npersona: p\n---\n## Find Y\ntargets: y\n\n## Find Z\ntargets: z\n',
+      );
+      const secondTask = (sessionId: string, kind: StudyEvent['kind']): StudyEvent => ({
+        ...event(sessionId, kind, 'B / Z', 'z', 500),
+        task_index: 1,
+      });
+
+      const results: ResultsFile = {
+        sessions: [unfinished('quit-early'), unfinished('quit-late')],
+        events: [
+          // Clicked around but never answered, so no task completed.
+          event('quit-early', 'start', '', null, 0),
+          event('quit-early', 'click', 'A', null, 100),
+          // Answered the first task, gave up on the second, then left.
+          event('quit-late', 'start', '', null, 0),
+          event('quit-late', 'submit', 'A / X / Y', 'y', 200),
+          secondTask('quit-late', 'giveup'),
+        ],
+      };
+
+      const [outcome] = analyze(results, [scheme], [twoTasks]);
+      expect(outcome.abandonedSessions).toBe(2);
+      // Zero tasks and two tasks, so a median of one.
+      expect(outcome.medianTasksBeforeAbandon).toBe(1);
+    });
+
+    it('reports no dropout median when every run finished', () => {
+      seq = 0;
+      const results: ResultsFile = {
+        sessions: [session('done-1')],
+        events: [event('done-1', 'start', '', null, 0), event('done-1', 'submit', 'A / X / Y', 'y', 1000)],
+      };
+
+      const [outcome] = analyze(results, [scheme], [scenario]);
+      expect(outcome.abandonedSessions).toBe(0);
+      expect(outcome.medianTasksBeforeAbandon).toBeNull();
+    });
   });
 });

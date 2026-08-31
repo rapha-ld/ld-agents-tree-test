@@ -106,8 +106,15 @@ The output file holds participant data, so it goes in `.gitignore`.
 
 ### Report
 
-`#/report` is excluded from the production build, gated on a
-`VITE_REPORT_ENABLED` variable that is set in `.env.local` and absent in CI.
+`#/report` exists under the dev server and in no build, gated on
+`import.meta.env.DEV`.
+
+The first attempt used a `VITE_REPORT_ENABLED` variable set in `.env.local` and
+absent in CI. That was wrong: Vite reads `.env.local` during `vite build` as
+well as `vite dev`, so `pnpm build` on a machine with the file produced a bundle
+containing the report. Verified by building and grepping the output. Tying
+inclusion to `DEV` means no build can carry the report whatever is set where.
+The cost is that `pnpm preview` shows the study only.
 
 This is not a security boundary and should not be described as one. The report
 code contains no credentials, and in production it could only ever show the
@@ -132,13 +139,52 @@ The report gains a dropout line per scheme: sessions started, sessions finished,
 and the task index where unfinished runs stopped. Where people quit is often the
 most useful signal a tree test produces, and today it is discarded.
 
+### Every task page stands on its own
+
+A participant currently sees the persona and context once, on an interstitial,
+then every task page shows only `task.prompt`. A prompt like "Turn off the
+feature that shipped this morning" means little without the incident it belongs
+to, and anyone who leaves and comes back, or who clicks through the interstitial
+quickly, never sees the context again.
+
+The task screen gains a persistent block holding the scenario persona and its
+context, shown in full. Context runs 20 to 30 words across all nine scenarios and
+no scenario has more than four tasks, so there is no need for a disclosure
+control: it always fits.
+
+Progress changes from one bar across all 31 tasks to two figures that a
+participant can act on. "Scenario 2 of 9" gives overall position. A segmented bar
+with one segment per task in the current scenario, alongside "Task 2 of 3", shows
+how much of this scenario is left. The single 31-task bar is removed rather than
+kept alongside, because two progress indicators compete and the global one told
+a participant almost nothing.
+
+The interstitial stays, and states how many tasks the scenario contains. Its job
+shifts from "remember this" to "here is what is coming".
+
+Semantics matter here as much as layout. The segmented bar is one element with
+`role="progressbar"` and `aria-valuenow` and `aria-valuemax`, not four
+decorative divs. The persona and context are associated with the task prompt, so
+someone reaching the prompt with a screen reader has the context in scope.
+Without that, the page is standalone only if you can see it.
+
+### README
+
+Written for two readers at once: designers on the team who may add a scheme or a
+scenario, and the author six months from now who has forgotten how any of it
+works. It covers why destinations are invariant and what that buys, how to author
+a scheme file, how to author a scenario and its tasks, what makes a scenario
+worth adding, how to run the project locally, and how to pull and read results.
+Gotchas are called out where they exist rather than left to be rediscovered.
+
 ## Files touched
 
 | File | Change |
 | --- | --- |
 | `scripts/pull-results.ts` | New. Paged select of both tables to a JSON file. |
-| `src/study/Study.tsx` | Flush on `pagehide` and hidden `visibilitychange`. Gate the report link. |
-| `src/main.tsx` | Gate the report route and nav link on `VITE_REPORT_ENABLED`. |
+| `src/study/Study.tsx` | Persistent scenario block, segmented progress, interstitial task count. Flush on `pagehide` and hidden `visibilitychange`. Gate the report link. |
+| `src/app.css` | Styles for the scenario block and the segmented bar. |
+| `src/main.tsx` | Gate the report route and nav link on `import.meta.env.DEV`. |
 | `src/report/analyze.ts` | Return started, finished, and dropout task per scheme. |
 | `src/report/Report.tsx` | Render the dropout figures. |
 | `.github/workflows/*.yml` | Pass the two `VITE_` variables to the build step. |
@@ -210,7 +256,7 @@ file to run.
 
 ### 2. Repository variables
 
-On `launchdarkly-labs/nav-lab`, under Settings, then Secrets and variables, then
+On `launchdarkly-labs/ld-nav-lab`, under Settings, then Secrets and variables, then
 Actions, open the Variables tab and add two repository variables:
 
 - `VITE_SUPABASE_URL`
@@ -241,7 +287,6 @@ Create `.env.local`, already covered by `.gitignore`:
 ```
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon key>
-VITE_REPORT_ENABLED=1
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service role key>
 ```

@@ -42,7 +42,19 @@ jobs:
       - run: pnpm test
 
       # Also type-checks, since the build script runs tsc first.
+      #
+      # The anon key is meant to be public: it identifies the project, and row
+      # level security decides what it may do, which here is insert and nothing
+      # else. These are Actions variables rather than secrets for that reason.
+      # Masking a value in a build log while serving it to every visitor would
+      # be false comfort.
+      #
+      # The report is not in this bundle at all: it is gated on
+      # import.meta.env.DEV, so no build can contain it.
       - run: pnpm build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/configure-pages@v5
 

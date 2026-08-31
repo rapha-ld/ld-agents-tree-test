@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Report } from './report/Report';
+import { reportIncluded } from './report-included';
 import { Study } from './study/Study';
 import './app.css';
 
@@ -18,14 +19,16 @@ function GlobalNav({ view }: { view: 'study' | 'report' }) {
   return (
     <header className="globalnav">
       <span className="brand">LD Nav Lab</span>
-      <nav aria-label="Sections">
-        <a href="#/study" className={view === 'study' ? 'active' : undefined} aria-current={view === 'study'}>
-          Study
-        </a>
-        <a href="#/report" className={view === 'report' ? 'active' : undefined} aria-current={view === 'report'}>
-          Report
-        </a>
-      </nav>
+      {reportIncluded ? (
+        <nav aria-label="Sections">
+          <a href="#/study" className={view === 'study' ? 'active' : undefined} aria-current={view === 'study'}>
+            Study
+          </a>
+          <a href="#/report" className={view === 'report' ? 'active' : undefined} aria-current={view === 'report'}>
+            Report
+          </a>
+        </nav>
+      ) : null}
     </header>
   );
 }
@@ -33,7 +36,9 @@ function GlobalNav({ view }: { view: 'study' | 'report' }) {
 function App() {
   const hash = useHashRoute();
   // The report is the operator's view; anything else is what a participant sees.
-  const view = hash.startsWith('#/report') ? 'report' : 'study';
+  // A production build has no report, so #/report falls through to the study
+  // rather than rendering a broken or empty page.
+  const view = reportIncluded && hash.startsWith('#/report') ? 'report' : 'study';
   return (
     <>
       <GlobalNav view={view} />

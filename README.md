@@ -16,8 +16,13 @@ snapshot.
 pnpm install
 pnpm score          # scheme comparison in the terminal
 pnpm dev            # study at /, report at /#/report
-pnpm test           # cost model and parser tests
+pnpm test           # cost model, parser, analysis, and paging tests
+pnpm pull           # download collected results, needs .env.local
 ```
+
+The report exists only when you run the project yourself. Published builds ship the
+study and nothing else, so aggregate results never appear on a public URL. See
+[Where results go](#where-results-go) for why it works that way.
 
 ## What is in here
 
@@ -131,6 +136,30 @@ nothing could ever see it.
 To keep comparisons honest, every scheme should place the same set of destinations.
 `pnpm score` prints `destinations placed` per scheme so a mismatch is visible.
 
+### Adding a scheme
+
+Drop a new `.md` file in `schemes/`. It is picked up automatically; there is no registry
+to update. The filename does not matter, the `id` in the frontmatter does, and it has to
+be unique because results are keyed on it.
+
+Then, in order:
+
+1. `pnpm score`. Check `destinations placed` matches the other schemes. A scheme that
+   places fewer destinations will look artificially cheap, because the pages it left out
+   are the expensive ones you did not have to find a home for.
+2. `pnpm dev` and click through your own scheme end to end. Reading a scheme file is a
+   poor substitute; the depth you actually feel while clicking is the thing being tested.
+3. Rename `name` to something neutral before a real study. Participants see it, and
+   "Current navigation" tells them which answer you are hoping for.
+
+Two gotchas worth knowing before you spend an afternoon on it:
+
+- Changing an existing scheme's `id` orphans every result already collected against it.
+  Rename the `name`, never the `id`, once a study has run.
+- Tagging an item with a mode that contradicts its section makes it unreachable, and
+  nothing will tell you. If an item never appears while you click through, check its
+  mode tag first.
+
 ## Authoring a scenario
 
 An intro paragraph sets the situation once. Each `##` is one task.
@@ -154,6 +183,41 @@ targets: experiments.new
 
 `targets` are fully correct answers. `accept` are answers you would also count, which
 is how you avoid punishing someone for stopping at a sensible parent.
+
+### Adding a scenario or a task
+
+Drop a new `.md` file in `scenarios/`, or add a `##` block to an existing one. Both are
+picked up automatically. The numeric filename prefix is for your own ordering only;
+scenario order is randomised per participant, so it has no effect on a run.
+
+What makes one worth adding:
+
+- **A job, not a page.** "Turn off the feature that broke checkout" is a scenario.
+  "Find the flag targeting tab" is a scavenger hunt, and it tests whether someone can
+  read a label you already told them.
+- **Wording that does not leak the answer.** If the task says "guarded rollout" and the
+  menu says "Guarded rollouts", you have measured reading, not navigation. Describe the
+  situation in the words a person would arrive with.
+- **Three or four tasks.** The whole run is 31 tasks across nine scenarios and people
+  tire. Every task you add costs attention on the ones already there.
+- **`weight` reflects how often this actually happens.** It scales the scenario's
+  contribution to the overall score. An incident response deserves more than a
+  once-a-quarter admin chore.
+
+Gotchas:
+
+- Set `accept` generously. Anything you would nod at in a real session belongs there, or
+  you will spend your analysis arguing with your own scoring. Success is derived at
+  analysis time, so you can widen `accept` after a study and re-read the same results.
+- A `targets` id that is not in the snapshot silently never matches, so that task can
+  never be answered correctly. Check the id against `data/destinations.json`, or against
+  `data/destinations.overlay.yaml` for non-route destinations.
+- Changing a scenario `id`, or reordering the `##` blocks inside one, breaks the link to
+  results already collected: events are keyed on scenario id and task index. Add to the
+  end rather than inserting in the middle, once a study has run.
+- The scenario context now stays on screen for the whole scenario, so it can carry the
+  situation rather than cramming it into each task prompt. Keep it to a couple of
+  sentences; it is standing context, not the question.
 
 ## The effort score
 
@@ -238,49 +302,72 @@ click, the final answer, and abandonment. Success is derived at analysis time fr
 
 ### Where results go
 
-**Nothing is connected to a database today.** Results are written to `localStorage` in
-whichever browser took the study, and the report page can export them as JSON. That is
-genuinely fine for moderated sessions where you are sitting next to the participant, and
-it is why the report shows a warning rather than pretending otherwise.
+There are two modes, decided by whether `.env.local` exists.
 
-The limitation is worth being clear about before you run anything unmoderated: if you
-send a link to someone on their own machine, their answers stay on their machine. You
-would have to ask them to open the report page and send you the file.
+**Connected**, when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set. Every run
+is written to Supabase as it happens: a `sessions` row when a participant starts, and
+`events` flushed after every task. Someone who abandons halfway still leaves their trail,
+which is deliberate, because where people quit is a result. A copy also goes to
+`localStorage`, so a network blip does not lose the run.
 
-Whatever the mode, a failed write is surfaced in the participant's UI rather than logged
-to the console. If the database cannot be reached, the final screen stops saying
-"your answers are recorded" and asks them to tell you instead. Do not silently trust a
-collection run you have not checked.
+**Local only**, when they are not set. Results live in the browser that took the study.
+Fine when you are sitting beside the participant, useless for anything unmoderated: send
+a link to someone on their own machine and their answers stay on their machine.
 
-### Connecting Supabase, when you are ready
+The UI tells you which mode you are in by exception. In local mode the study and the
+report both say "Database not connected". In connected mode they say nothing, so an
+absence of that notice is the confirmation.
+
+A failed write is surfaced to the participant rather than logged to a console they will
+never open. If the database cannot be reached, the final screen stops saying "your
+answers are recorded" and asks them to tell you. **Take one throwaway run end to end and
+confirm a row lands before you send the link to anyone.** A collection run you have not
+checked is not a collection run.
+
+Nothing in a browser can read results back. The `anon` key shipped in the published
+bundle is granted insert and nothing else, so no participant, and no stranger who finds
+the URL, can read anyone's answers, including their own. That is also why the report is
+a local tool instead of a page behind a login: there is no credential to steal and no
+login to get wrong, because the data was never reachable from the internet in the first
+place.
+
+### Connecting Supabase
 
 1. Create a Supabase project. The free tier is more than enough; this stores a few
-   thousand short rows.
+   thousand short rows. Note that free projects **pause after seven days without
+   activity**, so check the project is awake before each round of recruiting.
 2. In the SQL editor, run `supabase/schema.sql`. It creates the `sessions` and `events`
-   tables, an index, and row-level security policies granting the `anon` role insert
-   only, plus update on `sessions` so a run can be marked finished. Participants cannot
-   read anyone's answers, including their own.
-3. From **Project Settings → API**, copy the project URL and the `anon` public key.
+   tables, an index, the row level security policies, and the table grants. It is
+   idempotent, so re-running it after an edit is safe.
+
+   The grants are the part that is easy to miss. A policy narrows a privilege; it does
+   not create one. A schema with perfect policies and no `grant` fails every write with
+   `permission denied for table sessions` (SQLSTATE 42501), which the API reports as a
+   `401`, so it reads like a bad key rather than a missing privilege. If you see a 401,
+   check the grants before you check the key.
+3. From **Project settings, then API keys**, copy three values: the project URL, the
+   publishable (`anon`) key, and the secret (`service_role`) key.
 4. Create `.env.local` in the repo root:
 
    ```
    VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-   VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+   VITE_SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_KEY
+   SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=YOUR_SECRET_KEY
    ```
 
-   It is already gitignored. The `anon` key is designed to ship in a browser bundle and
-   the policies are what protect the data, so this is not a secret you need to guard.
+   Already gitignored. The URL appears twice on purpose: Vite exposes only
+   `VITE_`-prefixed variables to the browser, and `pnpm pull` runs in Node, so each needs
+   its own copy.
+
+   **Never give the secret key a `VITE_` prefix.** It bypasses row level security
+   entirely, and Vite inlines every `VITE_` variable into the bundle it builds. The
+   prefix would turn a local convenience into a public read of the whole database.
+
 5. Restart the dev server. Vite reads `.env` files only at startup, so a running server
    will not pick them up.
-6. Confirm it worked: the report page should replace the warning with "Connected to the
-   study database", and the study start screen should say results are saved to the
-   database. **Take one throwaway run end to end and check a row appears in `sessions`
-   before you send the link to anyone.**
-
-For hosting, set the same two variables in your Vercel project settings. Vite inlines
-them at build time rather than reading them at runtime, so a build that ran without them
-will stay in local-only mode no matter what the host is configured with afterwards.
-Rebuild after changing them.
+6. Take one throwaway run end to end. Give it a recognisable name so you can delete the
+   row afterwards, then confirm it appears in `sessions`.
 
 ### Time
 
@@ -297,10 +384,24 @@ matches reality.
 
 ### Reading the results
 
-Export `sessions` and `events` from Supabase as a single JSON object shaped
-`{ "sessions": [...], "events": [...] }` and load it on the report page, which is the
-same path locally-collected results take. Only runs with a `finished_at` are counted, so
-abandoned and restarted runs are ignored automatically.
+```bash
+pnpm pull           # writes nav-lab-results.json
+pnpm dev            # open #/report and load that file
+```
+
+`pnpm pull` is the only thing that reads the study tables. It uses the secret key from
+`.env.local`, pages through both tables, and writes the `{ sessions, events }` shape the
+report already loads. It prints how many sessions it found and how many were abandoned.
+
+Paging matters more than it looks. Supabase caps any response at 1000 rows and returns a
+truncated list with no error, and a completed run is about 150 rows, so an unpaged read
+starts silently under-reporting at roughly the sixth participant. That is what
+`src/pull/paged.ts` and its tests exist for.
+
+Only runs with a `finished_at` feed the accuracy and timing figures, so a half-finished
+run cannot skew them. Abandoned runs are reported separately at the bottom of the results
+table: how many started, how many gave up partway, and how many tasks a typical quitter
+got through. A scheme people abandon is telling you something the success rate cannot.
 
 Directness is the metric the model predicts and the study measures. Regressing one
 against the other is what turns α and the reveal penalties from guesses into
@@ -329,11 +430,34 @@ pnpm build          # outputs dist/
 ```
 
 **GitHub Pages** is wired up in `.github/workflows/pages.yml`, which tests, builds and
-publishes `dist/` on every push to `main`. It needs the repository's Pages source set to
-**GitHub Actions**, under Settings then Pages. Pointing Pages at a branch instead will
-serve a blank page: serving from a branch does not run a build, so it hands the browser
-the dev `index.html` and its reference to `/src/main.tsx`, which no browser can execute.
+publishes `dist/` on every push to `main`. Three settings it depends on:
 
-**Vercel** works too. Set the Supabase variables in the project settings if you have
-connected a database, and remember Vite inlines them at build time, so changing them needs
-a rebuild.
+- Pages source set to **GitHub Actions**, under Settings then Pages. Pointing Pages at a
+  branch instead serves a blank page: a branch deploy runs no build, so it hands the
+  browser the dev `index.html` and its reference to `/src/main.tsx`, which no browser can
+  execute.
+- Pages visibility set to **public**, if the repository is private. Private Pages limits
+  the site to accounts with repo read access, which excludes every external participant.
+  This does not make the repository public; the two settings are separate.
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` added under Settings, then Secrets and
+  variables, then Actions, on the **Variables** tab.
+
+Variables rather than secrets, deliberately. Both values are compiled into a bundle
+served to every visitor, so filing them as secrets would imply a confidentiality the
+deployment cannot provide. Do not add the secret key: it has no use in a build.
+
+The report is not in the published bundle at all. It is gated on `import.meta.env.DEV`,
+so it exists under `pnpm dev` and in no build, on any host, whatever is configured. That
+is not a security control and should not be described as one; the report holds no
+credentials and could only ever show a visitor their own browser's run. It is excluded
+because the cost model and which scheme currently wins do not belong in front of an
+external participant, and seeing them could bias someone who takes the study twice.
+
+The practical consequence is that `pnpm preview` shows the study only. To look at the
+report, use `pnpm dev`.
+
+Remember that Vite inlines these at build time rather than reading them at runtime, so a
+build that ran without them stays in local-only mode no matter what the host is
+configured with afterwards. Rebuild after changing them.
+
+**Vercel** works the same way: set the two `VITE_SUPABASE_*` variables.

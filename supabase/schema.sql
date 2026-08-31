@@ -36,3 +36,21 @@ alter table events   enable row level security;
 create policy sessions_insert on sessions for insert to anon with check (true);
 create policy sessions_update on sessions for update to anon using (true) with check (true);
 create policy events_insert   on events   for insert to anon with check (true);
+
+-- Table privileges, which are separate from the policies above and easy to
+-- forget. A policy narrows an existing privilege; it does not grant one. Without
+-- these the API returns "permission denied for table sessions" (SQLSTATE 42501)
+-- and no write can ever succeed, however permissive the policies are.
+--
+-- anon gets exactly what the study needs and nothing more. No select: that is
+-- what keeps the public bundle unable to read anyone's answers, and it is why
+-- the report is a local tool rather than a page behind a login.
+grant insert, update on table sessions to anon;
+grant insert          on table events   to anon;
+
+-- events.id is a bigserial, so inserting a row also consumes the sequence.
+grant usage on sequence events_id_seq to anon;
+
+-- service_role bypasses row level security but still needs the privilege. This
+-- is the role scripts/pull-results.ts uses to assemble the report.
+grant select on table sessions, events to service_role;

@@ -349,9 +349,9 @@ export function Report() {
       {measured && measured.length > 0 ? (
         <>
           <p className="muted">
-            From {measuredFrom}. Only completed runs count, so an abandoned or restarted run is ignored. These numbers
-            matter more than the predicted ones: if people find things easily in a menu the score calls hard work, trust
-            the people.
+            From {measuredFrom}. Only completed runs feed the rates, so a half-finished run cannot skew them. Runs
+            people abandoned are counted separately at the bottom. These numbers matter more than the predicted ones: if
+            people find things easily in a menu the score calls hard work, trust the people.
           </p>
           <div className="scroll">
             <table>
@@ -402,6 +402,26 @@ export function Report() {
                 <Row label="Typical time for the whole set" hint="one participant working through every task">
                   {measured.map((m) => (
                     <td key={m.schemeId}>{secs(m.medianRunMs)}</td>
+                  ))}
+                </Row>
+                <Row label="Started" hint="everyone who began, whether or not they got to the end">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{m.startedSessions}</td>
+                  ))}
+                </Row>
+                <Row label="Gave up partway" hint="left before the last task; their answers are excluded above" strong>
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>
+                      {m.abandonedSessions}
+                      {m.startedSessions > 0 ? (
+                        <span className="muted"> ({pct(m.abandonedSessions / m.startedSessions)})</span>
+                      ) : null}
+                    </td>
+                  ))}
+                </Row>
+                <Row label="Tasks reached before leaving" hint="typical progress of someone who quit, out of 31">
+                  {measured.map((m) => (
+                    <td key={m.schemeId}>{num(m.medianTasksBeforeAbandon, 0)}</td>
                   ))}
                 </Row>
               </tbody>

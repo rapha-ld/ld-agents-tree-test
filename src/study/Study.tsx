@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { scenarios, schemes } from '../data';
+import { reportIncluded } from '../report-included';
 import { defaultMode, sectionsForMode, visibleChildren } from '../score/cost';
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
@@ -35,6 +36,17 @@ function resolveScheme(choice: string): Scheme {
   // Uniform random assignment: the insert-only table gives the client no way to
   // read existing counts and balance them.
   return schemes[Math.floor(Math.random() * schemes.length)];
+}
+
+/**
+ * Scenario context is authored as markdown, so hard-wrapped lines inside a
+ * paragraph need rejoining before display.
+ */
+function contextParagraphs(scenario: Scenario): string[] {
+  return scenario.context
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean);
 }
 
 type Phase = 'intro' | 'scenario' | 'task' | 'done';
@@ -111,6 +123,29 @@ export function Study() {
     pending.current = [];
     noteSave(await saveEvents(batch));
   }, [noteSave]);
+
+  /**
+   * Without this, closing the tab mid-task loses that task's clicks: flush()
+   * otherwise only runs when a participant advances. pagehide and a hidden
+   * visibilitychange rather than beforeunload, which Safari does not fire
+   * reliably. Abandoned runs are the ones worth keeping, because where someone
+   * gave up is a result in itself.
+   */
+  useEffect(() => {
+    const flushQuietly = () => {
+      if (pending.current.length === 0) return;
+      void flush();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushQuietly();
+    };
+    window.addEventListener('pagehide', flushQuietly);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flushQuietly);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [flush]);
 
   const session = useCallback(
     (schemeId: string, finished: boolean): StudySession => ({
@@ -214,11 +249,54 @@ export function Study() {
     setTrail((t) => t.slice(0, -1));
   };
 
-  const totalTasks = useMemo(() => order.reduce((s, x) => s + x.tasks.length, 0), [order]);
-  const doneTasks = useMemo(
-    () => order.slice(0, scenarioIndex).reduce((s, x) => s + x.tasks.length, 0) + taskIndex,
-    [order, scenarioIndex, taskIndex],
+  const scenarioTasks = scenario?.tasks.length ?? 0;
+
+  /**
+   * Progress is reported per scenario rather than across all 31 tasks. A single
+   * bar creeping across the whole run tells a participant almost nothing, and
+   * "task 2 of 3" is something they can actually act on.
+   */
+  const scenarioProgress = (
+    <div className="progress-block">
+      <p className="progress-meta">
+        <span>
+          Scenario {scenarioIndex + 1} of {order.length}
+        </span>
+        <span>
+          Task {taskIndex + 1} of {scenarioTasks}
+        </span>
+      </p>
+      <div
+        className="segments"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={scenarioTasks}
+        // Matches the filled segment count and the visible "Task 1 of 3", so the
+        // announced value and the drawn one cannot disagree.
+        aria-valuenow={taskIndex + 1}
+        aria-label={`Task ${taskIndex + 1} of ${scenarioTasks} in this scenario`}
+      >
+        {Array.from({ length: scenarioTasks }, (_, i) => (
+          <span key={i} className={i <= taskIndex ? 'segment filled' : 'segment'} />
+        ))}
+      </div>
+    </div>
   );
+
+  /**
+   * Repeated on every task page. A prompt like "turn off the feature that
+   * shipped this morning" is meaningless without the incident it belongs to,
+   * and a participant who leaves and comes back would otherwise never see the
+   * context again.
+   */
+  const scenarioContext = scenario ? (
+    <section className="scenario-context" aria-labelledby="scenario-persona">
+      <h3 id="scenario-persona">{scenario.persona}</h3>
+      {contextParagraphs(scenario).map((paragraph) => (
+        <p key={paragraph}>{paragraph}</p>
+      ))}
+    </section>
+  ) : null;
 
   const saveNotice = saveIssue ? (
     <p className="save-notice">{saveIssue}</p>
@@ -295,13 +373,13 @@ export function Study() {
           Scenario {scenarioIndex + 1} of {order.length}
         </p>
         <h2>{scenario.persona}</h2>
-        {scenario.context
-          .split(/\n\s*\n/)
-          .map((paragraph) => paragraph.replace(/\s*\n\s*/g, ' ').trim())
-          .filter(Boolean)
-          .map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
+        {contextParagraphs(scenario).map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+        <p className="muted small">
+          {scenario.tasks.length} {scenario.tasks.length === 1 ? 'task' : 'tasks'}. The scenario stays on screen while
+          you work.
+        </p>
         <button className="primary" onClick={beginTask}>
           Continue
         </button>
@@ -318,12 +396,8 @@ export function Study() {
       <>
         <div className="study">
         {restartBar}
-        <div className="progress">
-          <div className="bar" style={{ width: `${(doneTasks / totalTasks) * 100}%` }} />
-        </div>
-        <p className="muted small">
-          Task {doneTasks + 1} of {totalTasks}
-        </p>
+        {scenarioProgress}
+        {scenarioContext}
         <h2 className="prompt">{task.prompt}</h2>
 
         {scheme.modes ? (
@@ -423,9 +497,11 @@ export function Study() {
         <button className="primary" onClick={restart}>
           Run it again
         </button>
-        <a className="linkbtn" href="#/report">
-          See the report
-        </a>
+        {reportIncluded ? (
+          <a className="linkbtn" href="#/report">
+            See the report
+          </a>
+        ) : null}
       </div>
       </div>
       {saveNotice}

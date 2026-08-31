@@ -53,6 +53,17 @@ export type SchemeOutcome = {
   medianMs: number | null;
   /** Median time for one participant to get through every scenario. */
   medianRunMs: number | null;
+  /** Every session assigned this scheme, finished or not. */
+  startedSessions: number;
+  /** Sessions that reached the end. Only these feed the rates above. */
+  finishedSessions: number;
+  /** Sessions that started and stopped partway. Stored, but excluded from rates. */
+  abandonedSessions: number;
+  /**
+   * Median number of tasks an abandoned run got through before stopping. Null
+   * when nobody abandoned. Where people quit is a result in its own right.
+   */
+  medianTasksBeforeAbandon: number | null;
   tasks: TaskOutcome[];
   scenarioOutcomes: ScenarioOutcome[];
 };
@@ -80,6 +91,34 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
     const list = groups.get(key) ?? [];
     list.push(event);
     groups.set(key, list);
+  }
+
+  /**
+   * Tasks a session actually got through, counted for every session including
+   * abandoned ones. A task counts once it has a submit or a giveup; clicks
+   * alone mean the participant was still working on it.
+   */
+  const tasksCompleted = new Map<string, Set<string>>();
+  for (const event of results.events) {
+    if (event.kind !== 'submit' && event.kind !== 'giveup') continue;
+    const done = tasksCompleted.get(event.session_id) ?? new Set<string>();
+    done.add(`${event.scenario_id}|${event.task_index}`);
+    tasksCompleted.set(event.session_id, done);
+  }
+
+  const started = new Map<string, number>();
+  const finished = new Map<string, number>();
+  const abandonedTaskCounts = new Map<string, number[]>();
+  for (const session of results.sessions) {
+    const schemeId = session.scheme_id;
+    started.set(schemeId, (started.get(schemeId) ?? 0) + 1);
+    if (session.finished_at) {
+      finished.set(schemeId, (finished.get(schemeId) ?? 0) + 1);
+      continue;
+    }
+    const counts = abandonedTaskCounts.get(schemeId) ?? [];
+    counts.push(tasksCompleted.get(session.id)?.size ?? 0);
+    abandonedTaskCounts.set(schemeId, counts);
   }
 
   type Acc = { attempts: number; successes: number; direct: number; firstClick: number; giveups: number; times: number[] };
@@ -241,9 +280,18 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
         giveupRate: rate(overall?.giveups ?? 0, overall?.attempts ?? 0),
         medianMs: median(overall?.times ?? []),
         medianRunMs: median(runTimes),
+        startedSessions: started.get(scheme.id) ?? 0,
+        finishedSessions: finished.get(scheme.id) ?? 0,
+        abandonedSessions: abandonedTaskCounts.get(scheme.id)?.length ?? 0,
+        medianTasksBeforeAbandon: median(abandonedTaskCounts.get(scheme.id) ?? []),
         tasks,
         scenarioOutcomes,
       };
     })
-    .filter((o) => o.attempts > 0);
+    /**
+     * A scheme with no finished attempts still has something to say if anyone
+     * started it. Filtering on attempts alone hid the worst possible outcome,
+     * a scheme every participant abandoned, behind an empty report.
+     */
+    .filter((o) => o.attempts > 0 || o.startedSessions > 0);
 }
