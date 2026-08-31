@@ -88,7 +88,17 @@ export async function saveSession(session: StudySession): Promise<SaveResult> {
   if (!client) return { local, remote: 'skipped' };
 
   try {
-    const { error } = await client.from('sessions').upsert(session);
+    // Insert at the start, update at the end, rather than upserting both times.
+    // An upsert's ON CONFLICT has to read the conflicting row, and the privilege
+    // that needs is less obvious than a plain update's. Being explicit about
+    // which call is which keeps the grants in schema.sql easy to reason about.
+    const { error } =
+      session.finished_at === null
+        ? await client.from('sessions').insert(session)
+        : await client
+            .from('sessions')
+            .update({ finished_at: session.finished_at, participant_label: session.participant_label })
+            .eq('id', session.id);
     if (error) return { local, remote: 'failed', error: error.message };
     return { local, remote: 'ok' };
   } catch (e) {

@@ -58,6 +58,16 @@ grant insert          on table events   to anon;
 -- events.id is a bigserial, so inserting a row also consumes the sequence.
 grant usage on sequence events_id_seq to anon;
 
+-- Marking a run finished is "update sessions set finished_at = ... where id = ...",
+-- and Postgres requires select privilege on every column named in a where clause.
+-- So the update needs select on id, and only on id: a column-level grant rather
+-- than the table-wide one the error message suggests.
+--
+-- This leaks nothing. There is still no select policy on the table, so row level
+-- security returns zero rows for any read anon attempts, and the ids are random
+-- UUIDs the client generated itself.
+grant select (id) on table sessions to anon;
+
 -- service_role bypasses row level security but still needs the privilege. This
 -- is the role scripts/pull-results.ts uses to assemble the report.
 grant select on table sessions, events to service_role;
