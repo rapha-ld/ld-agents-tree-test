@@ -220,6 +220,25 @@ Manual:
 Steps 3 and 4 are the ones that verify the security posture. Skipping them means
 shipping on an assumption.
 
+### What was verified, 2026-08-31
+
+Against the live project, with the grants applied:
+
+- A run inserts its session row and flushes events after each task. Confirmed by
+  taking a partial run and reading it back with `pnpm pull`.
+- `update sessions set finished_at = ... where id = ...` as `anon` returns 204,
+  so a run can be marked finished.
+- `select=*` as `anon` returns `42501 permission denied`. The grant is
+  column-level, on `id` only.
+- `select=id` as `anon` returns 200 with an empty array: the privilege allows the
+  column, and row level security returns no rows because there is no select
+  policy. Nothing public can read a result.
+- A production build contains no report markup and no service role key.
+  Confirmed by grepping `dist/`.
+
+Not yet verified: the dropout figures rendered against real finished data, which
+needs a completed run.
+
 ## Risks
 
 Supabase pauses free-tier projects after seven days without activity. A study
