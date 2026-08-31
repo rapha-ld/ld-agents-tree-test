@@ -33,6 +33,13 @@ alter table events   enable row level security;
 
 -- A session row is written at the start and updated once at the end, so the
 -- client needs update on its own row as well as insert.
+--
+-- Dropped first because create policy has no "if not exists", and this file is
+-- meant to be safe to re-run after an edit.
+drop policy if exists sessions_insert on sessions;
+drop policy if exists sessions_update on sessions;
+drop policy if exists events_insert   on events;
+
 create policy sessions_insert on sessions for insert to anon with check (true);
 create policy sessions_update on sessions for update to anon using (true) with check (true);
 create policy events_insert   on events   for insert to anon with check (true);
