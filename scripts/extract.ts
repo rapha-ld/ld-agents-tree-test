@@ -269,9 +269,7 @@ writeFileSync(
   outPath,
   `${JSON.stringify(
     {
-      extractedFrom: gonfalon,
       extractedAt: new Date().toISOString().slice(0, 10),
-      sources: SOURCES,
       counts: {
         routePatterns: routes.length,
         destinations: destinations.length,

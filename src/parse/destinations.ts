@@ -2,7 +2,6 @@ import yaml from 'js-yaml';
 import type { Destination } from './types';
 
 type Snapshot = {
-  extractedFrom?: string;
   extractedAt?: string;
   counts?: Record<string, number>;
   destinations: Destination[];

@@ -1,11 +1,5 @@
 {
-  "extractedFrom": "/Users/zac/code/launchdarkly/gonfalon",
   "extractedAt": "2026-08-18",
-  "sources": {
-    "ownership": "static/ld/routes/appRouteOwnership.ts",
-    "navigators": "packages/navigator/src/navigators.ts",
-    "navSections": "packages/chrome/src/internal/useNavigationSections.ts"
-  },
   "counts": {
     "routePatterns": 320,
     "destinations": 319,
