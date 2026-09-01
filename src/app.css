@@ -278,3 +278,116 @@ td.best, th.best { background: var(--best); color: var(--best-ink); }
   font-size: 0.95rem;
 }
 .filebtn input { display: none; }
+
+/* --- charts ---------------------------------------------------------------- */
+/* Marks carry colour; text never does. Accent means "ahead" in the emphasis
+   charts, so it is spent on one series rather than on telling five apart. */
+:root {
+  --viz-accent: #2a78d6;
+  --viz-bar: #98a1ad;
+  --viz-grid: #eceef2;
+}
+
+.viz { margin: 0 0 2.25rem; }
+.viz figcaption {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.viz-title { font-weight: 600; font-size: 0.95rem; }
+.viz-hint { color: var(--muted); font-size: 0.82rem; }
+.viz-toggle {
+  margin-left: auto;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.viz-toggle:hover { color: var(--ink); }
+.viz-nodata { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--warn); }
+
+.chart { width: 100%; max-width: 46rem; height: auto; display: block; }
+.viz-cat { font-size: 11.5px; fill: var(--ink); }
+.viz-cat.leader { font-weight: 600; }
+.viz-val { font-size: 11.5px; fill: var(--muted); }
+.viz-tick { font-size: 10.5px; fill: var(--muted); }
+.viz-grid { stroke: var(--viz-grid); stroke-width: 1; }
+.viz-axis { stroke: var(--line); stroke-width: 1; }
+
+/* Heatmap is a real table so a screen reader gets the row and column headers. */
+.heatmap-wrap { overflow-x: auto; }
+table.heatmap { border-collapse: separate; border-spacing: 2px; font-size: 0.8rem; background: none; }
+table.heatmap thead th {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 0 0.2rem 0.2rem;
+  border: 0;
+  max-width: 6.5rem;
+}
+table.heatmap tbody th {
+  font-weight: 400;
+  text-align: left;
+  padding: 0 0.6rem 0 0;
+  border: 0;
+  max-width: 17rem;
+  font-size: 0.8rem;
+}
+.viz-rownote { display: block; color: var(--muted); font-size: 0.7rem; }
+table.heatmap td.cell {
+  text-align: center;
+  padding: 0.42rem 0.3rem;
+  border: 0;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+  min-width: 3.6rem;
+}
+table.heatmap td.cell.empty { color: var(--muted); background: var(--bg); }
+
+.viz-scale { display: flex; align-items: center; gap: 3px; margin-top: 0.6rem; font-size: 0.72rem; color: var(--muted); }
+.viz-scale i { width: 22px; height: 8px; border-radius: 2px; }
+.viz-scale span:first-child { margin-right: 0.3rem; }
+.viz-scale span:last-child { margin-left: 0.3rem; }
+
+/* --- participants --------------------------------------------------------- */
+table.participants td, table.participants th { font-size: 0.84rem; }
+.pname { display: block; }
+.psid { display: block; font-size: 0.68rem; color: var(--muted); font-family: ui-monospace, monospace; }
+table.participants tr.excluded th, table.participants tr.excluded td { color: var(--muted); }
+table.participants tr.excluded .pname { text-decoration: line-through; }
+.tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.68rem;
+  color: var(--warn);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+}
+.switch { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.8rem; }
+
+/* --- collapsed detail ----------------------------------------------------- */
+.report details { margin: 0 0 1.5rem; }
+.report details > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0.35rem 0;
+}
+.report details > summary:hover { color: var(--ink); }
+.report details[open] > summary { margin-bottom: 0.75rem; }
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}

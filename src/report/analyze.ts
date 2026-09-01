@@ -48,7 +48,13 @@ export type SchemeOutcome = {
   attempts: number;
   successRate: number | null;
   directnessRate: number | null;
+  /**
+   * Among attempts whose first move could be evaluated, how many were heading
+   * somewhere the answer lives. Null when none could be evaluated, which the
+   * report renders as "no data" rather than as zero.
+   */
   firstClickRate: number | null;
+  firstClickKnown: number;
   giveupRate: number | null;
   medianMs: number | null;
   /** Median time for one participant to get through every scenario. */
@@ -121,7 +127,21 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
     abandonedTaskCounts.set(schemeId, counts);
   }
 
-  type Acc = { attempts: number; successes: number; direct: number; firstClick: number; giveups: number; times: number[] };
+  type Acc = {
+    attempts: number;
+    successes: number;
+    direct: number;
+    firstClick: number;
+    /**
+     * Attempts where the first move could actually be evaluated. A click path
+     * only resolves if its labels still match the scheme, so a renamed label
+     * makes old events unreadable. Without this the rate silently reported 0%,
+     * which is indistinguishable from everyone guessing wrong.
+     */
+    firstClickKnown: number;
+    giveups: number;
+    times: number[];
+  };
   const bySchemeTask = new Map<string, Acc>();
   const bySchemeSessions = new Map<string, Set<string>>();
   // Time is worth reporting on its own: a flat menu can score well on effort and
@@ -133,7 +153,7 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
   const accFor = (map: Map<string, Acc>, key: string) => {
     const existing = map.get(key);
     if (existing) return existing;
-    const fresh: Acc = { attempts: 0, successes: 0, direct: 0, firstClick: 0, giveups: 0, times: [] };
+    const fresh: Acc = { attempts: 0, successes: 0, direct: 0, firstClick: 0, firstClickKnown: 0, giveups: 0, times: [] };
     map.set(key, fresh);
     return fresh;
   };
@@ -182,6 +202,7 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
       // switching was unnecessary.
       const target = scheme.modes?.find((m) => m.label === firstNav.node_path);
       if (target) {
+        for (const a of [acc, schemeAcc]) a.firstClickKnown += 1;
         const reachable = new Set<string>();
         for (const section of scheme.sections) {
           if (section.mode === target.id) subtreeIds(section, reachable);
@@ -193,14 +214,21 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
     } else if (firstNav) {
       const node = findByLabels(scheme, firstNav.node_path.split(' / '));
       if (node) {
+        for (const a of [acc, schemeAcc]) a.firstClickKnown += 1;
         const reachable = subtreeIds(node);
         if ([...accepted].some((id) => reachable.has(id))) {
           for (const a of [acc, schemeAcc]) a.firstClick += 1;
         }
       }
-    } else if (terminal.kind === 'submit' && terminal.destination_id && accepted.has(terminal.destination_id)) {
-      // Answered at the top level without drilling, which is a correct first choice.
-      for (const a of [acc, schemeAcc]) a.firstClick += 1;
+    } else if (terminal.kind === 'submit' && terminal.destination_id) {
+      // Answered at the top level without drilling, so the submit itself is the
+      // first move, and it is one we can judge either way. Counting only the
+      // correct ones here would have kept wrong top-level answers out of the
+      // metric entirely.
+      for (const a of [acc, schemeAcc]) a.firstClickKnown += 1;
+      if (accepted.has(terminal.destination_id)) {
+        for (const a of [acc, schemeAcc]) a.firstClick += 1;
+      }
     }
 
     if (start) {
@@ -276,7 +304,8 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
         attempts: overall?.attempts ?? 0,
         successRate: rate(overall?.successes ?? 0, overall?.attempts ?? 0),
         directnessRate: rate(overall?.direct ?? 0, overall?.attempts ?? 0),
-        firstClickRate: rate(overall?.firstClick ?? 0, overall?.attempts ?? 0),
+        firstClickRate: rate(overall?.firstClick ?? 0, overall?.firstClickKnown ?? 0),
+        firstClickKnown: overall?.firstClickKnown ?? 0,
         giveupRate: rate(overall?.giveups ?? 0, overall?.attempts ?? 0),
         medianMs: median(overall?.times ?? []),
         medianRunMs: median(runTimes),
@@ -294,4 +323,71 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
      * a scheme every participant abandoned, behind an empty report.
      */
     .filter((o) => o.attempts > 0 || o.startedSessions > 0);
+}
+
+export type SessionSummary = {
+  sessionId: string;
+  label: string | null;
+  schemeId: string;
+  startedAt: string;
+  finished: boolean;
+  /** Start to last recorded event. Null when the session left no events. */
+  durationMs: number | null;
+  tasksCompleted: number;
+  successes: number;
+  giveups: number;
+};
+
+/**
+ * One row per person who started, for the participants table.
+ *
+ * Separate from analyze() because it answers a different question: analyze
+ * compares menus, this describes people. It counts abandoned runs too, since
+ * deciding whether to keep a run is exactly what the table is for.
+ */
+export function summarizeSessions(results: ResultsFile, scenarios: Scenario[]): SessionSummary[] {
+  const scenarioById = new Map(scenarios.map((s) => [s.id, s]));
+
+  type Agg = { completed: Set<string>; successes: number; giveups: number; lastTs: number };
+  const bySession = new Map<string, Agg>();
+  const aggFor = (id: string) => {
+    const existing = bySession.get(id);
+    if (existing) return existing;
+    const fresh: Agg = { completed: new Set(), successes: 0, giveups: 0, lastTs: 0 };
+    bySession.set(id, fresh);
+    return fresh;
+  };
+
+  for (const event of results.events) {
+    const agg = aggFor(event.session_id);
+    agg.lastTs = Math.max(agg.lastTs, Date.parse(event.ts));
+    if (event.kind !== 'submit' && event.kind !== 'giveup') continue;
+
+    agg.completed.add(`${event.scenario_id}|${event.task_index}`);
+    if (event.kind === 'giveup') {
+      agg.giveups += 1;
+      continue;
+    }
+    const task = scenarioById.get(event.scenario_id)?.tasks[event.task_index];
+    if (!task) continue;
+    const accepted = new Set([...task.targets, ...task.accept]);
+    if (event.destination_id && accepted.has(event.destination_id)) agg.successes += 1;
+  }
+
+  return results.sessions.map((session) => {
+    const agg = bySession.get(session.id);
+    const start = Date.parse(session.started_at);
+    const end = session.finished_at ? Date.parse(session.finished_at) : (agg?.lastTs ?? 0);
+    return {
+      sessionId: session.id,
+      label: session.participant_label,
+      schemeId: session.scheme_id,
+      startedAt: session.started_at,
+      finished: session.finished_at !== null,
+      durationMs: end > start ? end - start : null,
+      tasksCompleted: agg?.completed.size ?? 0,
+      successes: agg?.successes ?? 0,
+      giveups: agg?.giveups ?? 0,
+    };
+  });
 }

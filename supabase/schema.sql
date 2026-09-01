@@ -69,5 +69,9 @@ grant usage on sequence events_id_seq to anon;
 grant select (id) on table sessions to anon;
 
 -- service_role bypasses row level security but still needs the privilege. This
--- is the role scripts/pull-results.ts uses to assemble the report.
-grant select on table sessions, events to service_role;
+-- is the role scripts/pull-results.ts uses to assemble the report, and
+-- scripts/discard.ts uses to remove a single run.
+--
+-- Delete is granted to service_role only, never to anon: a participant must not
+-- be able to remove anyone's answers, including their own.
+grant select, delete on table sessions, events to service_role;

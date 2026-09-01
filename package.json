@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "extract": "tsx scripts/extract.ts",
     "score": "tsx scripts/score.ts",
-    "pull": "tsx scripts/pull-results.ts"
+    "pull": "tsx scripts/pull-results.ts",
+    "discard": "tsx scripts/discard.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

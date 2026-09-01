@@ -389,6 +389,12 @@ pnpm pull           # writes nav-lab-results.json
 pnpm dev            # open #/report and load that file
 ```
 
+The report leads with what people actually managed, because that is the part worth acting
+on; the predicted effort score sits below it as a sanity check. Every chart has a
+**Show numbers** toggle if you want the table behind it. The first chart is the whole
+summary: predicted effort across, measured success up, so up and to the left wins and a
+menu the model and the people disagree about is immediately visible.
+
 `pnpm pull` is the only thing that reads the study tables. It uses the secret key from
 `.env.local`, pages through both tables, and writes the `{ sessions, events }` shape the
 report already loads. It prints how many sessions it found and how many were abandoned.
@@ -399,9 +405,26 @@ starts silently under-reporting at roughly the sixth participant. That is what
 `src/pull/paged.ts` and its tests exist for.
 
 Only runs with a `finished_at` feed the accuracy and timing figures, so a half-finished
-run cannot skew them. Abandoned runs are reported separately at the bottom of the results
-table: how many started, how many gave up partway, and how many tasks a typical quitter
-got through. A scheme people abandon is telling you something the success rate cannot.
+run cannot skew them. **Who took it** lists everyone who started, finished or not, with
+when they took it, how long they took, how far they got, and how many they got right.
+
+### Leaving someone out
+
+Turn **Counted** off in that table and every chart recomputes without them. Nothing is
+deleted, the choice is remembered in this browser, and it is keyed by session id so it
+survives a `pnpm pull`. Use it for a pilot run, a colleague clicking around, or anyone
+who clearly disengaged.
+
+To remove a run for good:
+
+```bash
+pnpm discard <session-id>
+```
+
+The table shows the first eight characters of each id; hover the row for the whole thing,
+which is what the script wants. It refuses a prefix on purpose, since a prefix that
+matches the wrong row deletes someone else's answers. Events go before the session, so a
+half-failed delete leaves a session with no answers rather than orphaned events.
 
 Directness is the metric the model predicts and the study measures. Regressing one
 against the other is what turns α and the reveal penalties from guesses into

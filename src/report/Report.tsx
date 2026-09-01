@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { destinations, scenarios, schemes, snapshotDate, weights } from '../data';
 import { DEFAULT_PARAMS, scoreScheme, type CostParams } from '../score/cost';
 import { clearLocalResults, exportLocalResults, localResultCount, persistenceMode } from '../session';
-import { analyze, type ResultsFile, type SchemeOutcome } from './analyze';
+import { analyze, summarizeSessions, type ResultsFile, type SchemeOutcome } from './analyze';
+import { Heatmap, Lines, RankedBars, Scatter } from './charts';
+import { Participants } from './Participants';
+import { readExcluded, writeExcluded } from './excluded';
 
 const ASSUMPTION_SWEEP = [0, 0.25, 0.5, 0.75, 1, 1.5, 2];
 
-function pct(v: number | null) {
-  return v === null ? '—' : `${Math.round(v * 100)}%`;
-}
 function num(v: number | null, digits = 2) {
   return v === null ? '—' : v.toFixed(digits);
 }
@@ -17,9 +17,9 @@ function secs(ms: number | null) {
 }
 
 /** A table row whose label carries its own one-line explanation. */
-function Row({ label, hint, children, strong }: { label: string; hint: string; children: ReactNode; strong?: boolean }) {
+function Row({ label, hint, children }: { label: string; hint: string; children: ReactNode }) {
   return (
-    <tr className={strong ? 'headline' : undefined}>
+    <tr>
       <th>
         <span className="rowlabel">{label}</span>
         <span className="rowhint">{hint}</span>
@@ -33,9 +33,10 @@ export function Report() {
   const [readCost, setReadCost] = useState(DEFAULT_PARAMS.alpha);
   const [offscreenCost, setOffscreenCost] = useState(DEFAULT_PARAMS.overflowPenalty);
   const [detail, setDetail] = useState<string | null>(null);
-  const [measured, setMeasured] = useState<SchemeOutcome[] | null>(null);
-  const [measuredFrom, setMeasuredFrom] = useState<'this browser' | 'a file' | null>(null);
+  const [raw, setRaw] = useState<ResultsFile | null>(null);
+  const [source, setSource] = useState<'this browser' | 'a file' | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [excluded, setExcluded] = useState<Set<string>>(() => readExcluded());
 
   const params: CostParams = useMemo(
     () => ({ ...DEFAULT_PARAMS, alpha: readCost, overflowPenalty: offscreenCost }),
@@ -63,20 +64,49 @@ export function Report() {
   const local = localResultCount();
   const totalTasks = scenarios.reduce((s, x) => s + x.tasks.length, 0);
 
-  // Anyone who just took the test should see their results without having to
-  // export a file and load it back in.
+  // Anyone who just took the study should see it without exporting a file first.
   useEffect(() => {
-    if (measuredFrom === 'a file') return;
+    if (source === 'a file') return;
     try {
       const parsed = JSON.parse(exportLocalResults()) as ResultsFile;
-      const outcomes = analyze(parsed, schemes, scenarios);
-      setMeasured(outcomes.length > 0 ? outcomes : null);
-      setMeasuredFrom(outcomes.length > 0 ? 'this browser' : null);
+      if (parsed.sessions.length > 0) {
+        setRaw(parsed);
+        setSource('this browser');
+      }
     } catch {
-      setMeasured(null);
-      setMeasuredFrom(null);
+      setRaw(null);
+      setSource(null);
     }
-  }, [measuredFrom]);
+  }, [source]);
+
+  /** Everyone who started, excluded or not, so a run can always be put back. */
+  const everyone = useMemo(() => (raw ? summarizeSessions(raw, scenarios) : []), [raw]);
+
+  /** Analysis runs on the kept runs only. Excluding is not deleting. */
+  const kept: ResultsFile | null = useMemo(() => {
+    if (!raw) return null;
+    if (excluded.size === 0) return raw;
+    return {
+      sessions: raw.sessions.filter((s) => !excluded.has(s.id)),
+      events: raw.events.filter((e) => !excluded.has(e.session_id)),
+    };
+  }, [raw, excluded]);
+
+  const measured: SchemeOutcome[] | null = useMemo(() => {
+    if (!kept) return null;
+    const outcomes = analyze(kept, schemes, scenarios);
+    return outcomes.length > 0 ? outcomes : null;
+  }, [kept]);
+
+  const toggleExcluded = (sessionId: string) => {
+    setExcluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(sessionId)) next.delete(sessionId);
+      else next.add(sessionId);
+      writeExcluded(next);
+      return next;
+    });
+  };
 
   const loadResults = async (file: File) => {
     setLoadError(null);
@@ -85,8 +115,8 @@ export function Report() {
       if (!Array.isArray(parsed.sessions) || !Array.isArray(parsed.events)) {
         throw new Error('Expected a file with a list of sessions and a list of events');
       }
-      setMeasured(analyze(parsed, schemes, scenarios));
-      setMeasuredFrom('a file');
+      setRaw(parsed);
+      setSource('a file');
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
     }
@@ -101,52 +131,193 @@ export function Report() {
     URL.revokeObjectURL(a.href);
   };
 
+  const nameFor = (id: string) => schemes.find((s) => s.id === id)?.name ?? id;
+  const withN = (m: SchemeOutcome) => `${nameFor(m.schemeId)} · ${m.finishedSessions}`;
+
+  // The leader on measured success, which is the axis the study actually tests.
+  const measuredLeader = measured
+    ? measured.reduce((a, b) => ((b.successRate ?? -1) > (a.successRate ?? -1) ? b : a))
+    : null;
+
   return (
     <div className="report">
       <header>
         <h1>Menu comparison</h1>
         <p className="muted">
-          {schemes.length} menus, scored against {scenarios.length} scenarios made of {totalTasks} tasks. Page list taken
-          from the product on {snapshotDate}: {destinations.size} places you can get to.
+          {schemes.length} menus · {scenarios.length} scenarios · {totalTasks} tasks · {destinations.size} pages, taken
+          from the product on {snapshotDate}
+          {measured ? ` · ${everyone.length} people tested` : ''}
         </p>
       </header>
 
-      <section className="explainer">
-        <h3>What the numbers mean</h3>
-        <p>
-          Every number in the top table is an <strong>effort score</strong>. One point is roughly one click. Fractions
-          get added for the things that make a click harder than a click: a long menu is more to read than a short one,
-          an item tucked inside a collapsed section or a fly-out needs an extra action to reveal, and a feature only some
-          accounts can see is invisible to everyone else.
-        </p>
-        <p>
-          So three clicks through short menus scores a little over three. The same three clicks through long menus, with
-          a collapsed section on the way, scores five or six. <strong>Lower is better.</strong>
-        </p>
-        <p>
-          <strong>Average effort per task</strong> is the number to look at first, because it is on a scale you can hold
-          in your head. <strong>Overall score</strong> adds up all {scenarios.length} scenarios and counts the more
-          important ones more heavily, so it is only useful for comparing one column against another. On its own it means
-          nothing.
-        </p>
-      </section>
+      {measured && measuredLeader ? (
+        <>
+          <Scatter
+            title="Predicted effort against what people managed"
+            hint="Up and to the left is better. Where the two disagree, trust the people."
+            xLabel="predicted effort per task"
+            yLabel="found it"
+            formatX={(v) => v.toFixed(1)}
+            formatY={(v) => `${Math.round(v * 100)}%`}
+            points={measured
+              .filter((m) => m.successRate !== null)
+              .map((m) => ({
+                key: m.schemeId,
+                label: nameFor(m.schemeId),
+                x: results.find((r) => r.schemeId === m.schemeId)?.meanTaskCost ?? 0,
+                y: m.successRate ?? 0,
+                leader: m.schemeId === measuredLeader.schemeId,
+              }))}
+          />
 
-      <section className="explainer caution">
-        <h3>Two things to know before trusting it</h3>
-        <p>
-          <strong>This score only measures getting there, not finding it.</strong> It assumes you already know which item
-          to click. It says nothing about whether the label would lead you to the right place in the first place, which
-          is usually the bigger problem. That is what the test measures, further down this page.
+          <h2>What people did</h2>
+          <p className="muted small">
+            From {source}. The number after each menu is how many people finished it. Only finished runs count here.
+          </p>
+
+          <RankedBars
+            title="Found the right place"
+            hint="ended up somewhere we would accept as correct"
+            data={measured.map((m) => ({ key: m.schemeId, label: withN(m), value: m.successRate }))}
+            format={(v) => `${Math.round(v * 100)}%`}
+            max={1}
+          />
+
+          <RankedBars
+            title="Went straight there"
+            hint="found it without going back to try somewhere else"
+            data={measured.map((m) => ({ key: m.schemeId, label: withN(m), value: m.directnessRate }))}
+            format={(v) => `${Math.round(v * 100)}%`}
+            max={1}
+          />
+
+          <RankedBars
+            title="First click was on the right track"
+            hint="their very first move led somewhere the answer lives"
+            data={measured.map((m) => ({
+              key: m.schemeId,
+              label: withN(m),
+              // Null rather than zero when no click path could be read back, so a
+              // broken metric stops looking like a finding.
+              value: m.firstClickKnown === 0 ? null : m.firstClickRate,
+            }))}
+            format={(v) => `${Math.round(v * 100)}%`}
+            max={1}
+          />
+
+          <RankedBars
+            title="Gave up"
+            hint="said they would not know where to look; lower is better"
+            data={measured.map((m) => ({ key: m.schemeId, label: withN(m), value: m.giveupRate }))}
+            format={(v) => `${Math.round(v * 100)}%`}
+            max={1}
+            lowerIsBetter
+          />
+
+          <RankedBars
+            title="Typical time per task"
+            hint="median, so one slow person cannot drag a menu; lower is better"
+            data={measured.map((m) => ({ key: m.schemeId, label: withN(m), value: m.medianMs }))}
+            format={(v) => `${(v / 1000).toFixed(1)}s`}
+            lowerIsBetter
+          />
+
+          <Heatmap
+            title="Found the right place, by scenario"
+            hint="Darker is better. Few people per cell, so read the pattern rather than a single number."
+            rows={scenarios.map((s) => ({
+              key: s.id,
+              label: s.persona,
+              note: `${s.tasks.length} tasks${s.weight !== 1 ? ` · weight ${s.weight}×` : ''}`,
+            }))}
+            columns={measured.map((m) => ({ key: m.schemeId, label: nameFor(m.schemeId) }))}
+            cell={(rowKey, colKey) => {
+              const outcome = measured
+                .find((m) => m.schemeId === colKey)
+                ?.scenarioOutcomes.find((o) => o.scenarioId === rowKey);
+              if (!outcome || outcome.attempts === 0) return null;
+              return outcome.successes / outcome.attempts;
+            }}
+            format={(v) => `${Math.round(v * 100)}%`}
+          />
+
+          <h2>Who took it</h2>
+          <p className="muted small">
+            Turn <strong>Counted</strong> off to leave someone out; every number above recomputes. Nothing is deleted,
+            and the choice is remembered in this browser. To remove a run for good:{' '}
+            <code>pnpm discard &lt;session-id&gt;</code>
+          </p>
+          <Participants
+            sessions={everyone}
+            schemes={schemes}
+            excluded={excluded}
+            onToggle={toggleExcluded}
+            totalTasks={totalTasks}
+          />
+          {excluded.size > 0 ? (
+            <p className="muted small">
+              {excluded.size} {excluded.size === 1 ? 'person' : 'people'} left out.{' '}
+              <button
+                className="linklike"
+                onClick={() => {
+                  setExcluded(new Set());
+                  writeExcluded(new Set());
+                }}
+              >
+                Put everyone back
+              </button>
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="muted">
+          Nobody has finished a test yet. <a href="#/study">Take one</a>, or load a results file below.
+          {persistenceMode === 'local' ? ' Database not connected, so results are only in this browser.' : ''}
         </p>
-        <p>
-          <strong>A single long list can look deceptively good.</strong> Grouping a list means reading twice, once to
-          pick the group and once inside it, plus an extra click. Add that up and one long list of everything can beat a
-          tidy set of groups, which is not how people behave once a list runs off the bottom of the screen. So we charge
-          extra for each item past the twelfth. Drag the second slider to zero and watch{' '}
-          <strong>{schemes.find((s) => s.id === 'flat')?.name ?? 'the flat menu'}</strong> jump to first place. That is
-          the assumption doing the work, and it is worth knowing it is there.
-        </p>
-      </section>
+      )}
+
+      <h2>Predicted effort</h2>
+      <p className="muted small">
+        From the menu structure, no people involved. One point is roughly one click, plus fractions for reading a long
+        menu and for anything that needs revealing. Lower is better.
+      </p>
+
+      <RankedBars
+        title="Effort per task"
+        hint="roughly, how many clicks' worth of work each task takes"
+        data={results.map((r) => ({ key: r.schemeId, label: r.schemeName, value: r.meanTaskCost }))}
+        format={(v) => v.toFixed(2)}
+        lowerIsBetter
+      />
+
+      <Heatmap
+        title="Effort by scenario"
+        hint="Each scenario is one job someone came to do. Darker is worse."
+        rows={scenarios.map((s) => ({
+          key: s.id,
+          label: s.persona,
+          note: `${s.tasks.length} tasks${s.weight !== 1 ? ` · weight ${s.weight}×` : ''}`,
+        }))}
+        columns={results.map((r) => ({ key: r.schemeId, label: r.schemeName }))}
+        cell={(rowKey, colKey) =>
+          results.find((r) => r.schemeId === colKey)?.scenarios.find((s) => s.scenarioId === rowKey)?.total ?? null
+        }
+        format={(v) => v.toFixed(1)}
+      />
+
+      <Lines
+        title="Does the winner hold up?"
+        hint="A line that stays lowest is genuinely ahead. One that crosses is winning because of the setting."
+        xLabel="how much reading a menu costs"
+        xTicks={sweep.map((row) => (row.alpha === 0 ? 'none' : String(row.alpha)))}
+        format={(v) => v.toFixed(0)}
+        series={schemes.map((s) => ({
+          key: s.id,
+          label: s.name,
+          leader: s.id === best.schemeId,
+          points: sweep.map((row) => row.scores.find((r) => r.schemeId === s.id)?.scenarioWeightedTotal ?? 0),
+        }))}
+      />
 
       <section className="controls">
         <label>
@@ -164,331 +335,184 @@ export function Report() {
             value={offscreenCost}
             onChange={(e) => setOffscreenCost(Number(e.target.value))}
           />
-          <span className="hint">Applies past {DEFAULT_PARAMS.overflowBudget} items in one list. Zero ignores the screen entirely.</span>
+          <span className="hint">
+            Applies past {DEFAULT_PARAMS.overflowBudget} items in one list. Set it to zero and{' '}
+            {schemes.find((s) => s.id === 'flat')?.name ?? 'the flat menu'} jumps to first place, which is the
+            assumption doing the work.
+          </span>
         </label>
       </section>
 
-      <h2>Predicted effort</h2>
-      <p className="muted">Calculated from the menu structure. No people involved.</p>
-      <div className="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>&nbsp;</th>
-              {results.map((r) => (
-                <th key={r.schemeId} className={r.schemeId === best.schemeId ? 'best' : undefined}>
-                  {r.schemeName}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <Row label="Average effort per task" hint="roughly, how many clicks' worth of work each task takes" strong>
-              {results.map((r) => (
-                <td key={r.schemeId} className={r.schemeId === best.schemeId ? 'best' : undefined}>
-                  {num(r.meanTaskCost)}
-                </td>
-              ))}
-            </Row>
-            <Row label="Average clicks per task" hint="just the clicks, ignoring how hard each one is">
-              {results.map((r) => (
-                <td key={r.schemeId}>{num(r.meanTaskClicks, 1)}</td>
-              ))}
-            </Row>
-            <Row label="Overall score" hint="all scenarios added up, important ones counted more; compare columns only">
-              {results.map((r) => (
-                <td key={r.schemeId} className={r.schemeId === best.schemeId ? 'best' : undefined}>
-                  {num(r.scenarioWeightedTotal, 1)}
-                </td>
-              ))}
-            </Row>
-            <Row label="Average effort for any page" hint="across all 169 pages the menu reaches, not just the tested ones">
-              {results.map((r) => (
-                <td key={r.schemeId}>{num(r.meanCost)}</td>
-              ))}
-            </Row>
-            <Row label="Hardest page to reach" hint="the single worst case, and which page it is">
-              {results.map((r) => (
-                <td key={r.schemeId}>
-                  {r.worstCase ? (
-                    <>
-                      {num(r.worstCase.cost)} <span className="muted small">{r.worstCase.destinationId}</span>
-                    </>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-              ))}
-            </Row>
-            <Row label="Items in the top level" hint="what you see before clicking anything">
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.breadth[0]?.max ?? 0}</td>
-              ))}
-            </Row>
-            <Row label="Most choices on one screen" hint="the busiest list anywhere in the menu">
-              {results.map((r) => (
-                <td key={r.schemeId}>{Math.max(...r.breadth.map((b) => b.max))}</td>
-              ))}
-            </Row>
-            <Row label="Pages the menu reaches" hint="should match across menus, otherwise the comparison is unfair">
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.boundDestinations}</td>
-              ))}
-            </Row>
-            <Row label="Pages in two places at once" hint="helps people find things, muddies the structure">
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.duplicated.length}</td>
-              ))}
-            </Row>
-            <Row label="Pages not in the menu" hint="normal: most pages are reached by opening an item, not from the menu">
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.unreachable.length}</td>
-              ))}
-            </Row>
-            <Row label="Pages that do not exist yet" hint="invented by a proposed menu; nothing to compare them against">
-              {results.map((r) => (
-                <td key={r.schemeId}>{r.proposed.length}</td>
-              ))}
-            </Row>
-            {Object.keys(weights).length > 0 ? (
-              <Row label="Effort weighted by how often pages are used" hint="from real traffic">
+      <details>
+        <summary>Structure checks — mostly identical across menus, which is the point</summary>
+        <div className="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>&nbsp;</th>
                 {results.map((r) => (
-                  <td key={r.schemeId}>{num(r.weightedMeanCost)}</td>
+                  <th key={r.schemeId}>{r.schemeName}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <Row label="Average clicks per task" hint="just the clicks, ignoring how hard each one is">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{num(r.meanTaskClicks, 1)}</td>
                 ))}
               </Row>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+              <Row label="Overall score" hint="all scenarios added up, important ones counted more; compare columns only">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{num(r.scenarioWeightedTotal, 1)}</td>
+                ))}
+              </Row>
+              <Row label="Average effort for any page" hint="every page the menu reaches, not just the tested ones">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{num(r.meanCost)}</td>
+                ))}
+              </Row>
+              <Row label="Hardest page to reach" hint="the single worst case, and which page it is">
+                {results.map((r) => (
+                  <td key={r.schemeId}>
+                    {r.worstCase ? (
+                      <>
+                        {num(r.worstCase.cost)} <span className="muted small">{r.worstCase.destinationId}</span>
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                ))}
+              </Row>
+              <Row label="Items in the top level" hint="what you see before clicking anything">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{r.breadth[0]?.max ?? 0}</td>
+                ))}
+              </Row>
+              <Row label="Most choices on one screen" hint="the busiest list anywhere in the menu">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{Math.max(...r.breadth.map((b) => b.max))}</td>
+                ))}
+              </Row>
+              <Row label="Pages the menu reaches" hint="should match across menus, otherwise the comparison is unfair">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{r.boundDestinations}</td>
+                ))}
+              </Row>
+              <Row label="Pages in two places at once" hint="helps people find things, muddies the structure">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{r.duplicated.length}</td>
+                ))}
+              </Row>
+              <Row label="Pages not in the menu" hint="normal: most pages are reached by opening an item, not the menu">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{r.unreachable.length}</td>
+                ))}
+              </Row>
+              <Row label="Pages that do not exist yet" hint="invented by a proposed menu; nothing to compare against">
+                {results.map((r) => (
+                  <td key={r.schemeId}>{r.proposed.length}</td>
+                ))}
+              </Row>
+              {Object.keys(weights).length > 0 ? (
+                <Row label="Effort weighted by how often pages are used" hint="from real traffic">
+                  {results.map((r) => (
+                    <td key={r.schemeId}>{num(r.weightedMeanCost)}</td>
+                  ))}
+                </Row>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </details>
 
-      <h2>Effort by scenario</h2>
-      <p className="muted">
-        Each scenario is one job someone came to do, split into tasks. The lowest number in each row is highlighted.
-      </p>
-      <div className="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Scenario</th>
-              {results.map((r) => (
-                <th key={r.schemeId}>{r.schemeName}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {scenarios.map((scenario) => {
-              const cells = results.map((r) => r.scenarios.find((s) => s.scenarioId === scenario.id));
-              const finite = cells.map((c) => c?.total).filter((v): v is number => typeof v === 'number');
-              const min = finite.length ? Math.min(...finite) : null;
-              return (
-                <tr key={scenario.id}>
-                  <th>
-                    <span className="rowlabel">{scenario.persona}</span>
-                    <span className="rowhint">
-                      {scenario.tasks.length} tasks
-                      {scenario.weight !== 1 ? ` · counted ${scenario.weight}× in the overall score` : ''}
-                    </span>
-                  </th>
-                  {cells.map((c, i) => (
-                    <td key={results[i].schemeId} className={c?.total !== null && c?.total === min ? 'best' : undefined}>
-                      {c?.total === null ? (
-                        <span className="warn">can&rsquo;t get there</span>
-                      ) : (
-                        num(c?.total ?? null)
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <h2>Does the winner hold up?</h2>
-      <p className="muted">
-        The same comparison run with the &ldquo;how much reading costs&rdquo; setting turned all the way down and all the
-        way up. A menu that leads every row is genuinely ahead. One that only leads in the middle is winning because of
-        the setting, not because it is better.
-      </p>
-      <div className="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Reading cost</th>
-              {schemes.map((s) => (
-                <th key={s.id}>{s.name}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sweep.map((row) => {
-              const leader = row.scores.reduce((a, b) =>
-                (b.scenarioWeightedTotal ?? Infinity) < (a.scenarioWeightedTotal ?? Infinity) ? b : a,
-              );
-              return (
-                <tr key={row.alpha}>
-                  <th>{row.alpha === 0 ? 'none (0)' : row.alpha}</th>
-                  {row.scores.map((r) => (
-                    <td key={r.schemeId} className={r.schemeId === leader.schemeId ? 'best' : undefined}>
-                      {num(r.scenarioWeightedTotal, 1)}
-                    </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <h2>What people actually did</h2>
-      {persistenceMode === 'local' ? (
-        <p className="muted">Database not connected. Results are being saved locally.</p>
-      ) : null}
-
-      {measured && measured.length > 0 ? (
-        <>
-          <p className="muted">
-            From {measuredFrom}. Only completed runs feed the rates, so a half-finished run cannot skew them. Runs
-            people abandoned are counted separately at the bottom. These numbers matter more than the predicted ones: if
-            people find things easily in a menu the score calls hard work, trust the people.
-          </p>
-          <div className="scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>&nbsp;</th>
-                  {measured.map((m) => (
-                    <th key={m.schemeId}>{schemes.find((s) => s.id === m.schemeId)?.name ?? m.schemeId}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <Row label="People tested" hint="one menu each, so they are never compared unfairly">
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{m.sessions}</td>
-                  ))}
-                </Row>
-                <Row label="Tasks attempted" hint="people multiplied by tasks">
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{m.attempts}</td>
-                  ))}
-                </Row>
-                <Row label="Found the right place" hint="ended up somewhere we would accept as correct" strong>
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{pct(m.successRate)}</td>
-                  ))}
-                </Row>
-                <Row label="Went straight there" hint="found it without going back to try somewhere else" strong>
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{pct(m.directnessRate)}</td>
-                  ))}
-                </Row>
-                <Row label="First choice was on the right track" hint="their very first click could have led to the answer">
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{pct(m.firstClickRate)}</td>
-                  ))}
-                </Row>
-                <Row label="Gave up" hint="said they would not know where to look">
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{pct(m.giveupRate)}</td>
-                  ))}
-                </Row>
-                <Row label="Typical time per task" hint="the middle of the range, so one slow person cannot skew it" strong>
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{secs(m.medianMs)}</td>
-                  ))}
-                </Row>
-                <Row label="Typical time for the whole set" hint="one participant working through every task">
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{secs(m.medianRunMs)}</td>
-                  ))}
-                </Row>
-                <Row label="Started" hint="everyone who began, whether or not they got to the end">
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{m.startedSessions}</td>
-                  ))}
-                </Row>
-                <Row label="Gave up partway" hint="left before the last task; their answers are excluded above" strong>
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>
-                      {m.abandonedSessions}
-                      {m.startedSessions > 0 ? (
-                        <span className="muted"> ({pct(m.abandonedSessions / m.startedSessions)})</span>
-                      ) : null}
-                    </td>
-                  ))}
-                </Row>
-                <Row label="Tasks reached before leaving" hint="typical progress of someone who quit, out of 31">
-                  {measured.map((m) => (
-                    <td key={m.schemeId}>{num(m.medianTasksBeforeAbandon, 0)}</td>
-                  ))}
-                </Row>
-              </tbody>
-            </table>
-          </div>
-        </>
-      ) : (
-        <p className="muted">
-          Nobody has finished a test yet. <a href="#/study">Take one</a> and the results will appear here.
+      <details>
+        <summary>What the effort score does and does not tell you</summary>
+        <p className="muted small">
+          It measures getting there, not finding it. It assumes you already know which item to click, and says nothing
+          about whether the label would lead you to the right place. That is what the study measures, and why those
+          charts sit at the top of this page.
         </p>
-      )}
+        <p className="muted small">
+          A single long list can look deceptively good. Grouping means reading twice, once to pick the group and once
+          inside it, plus a click. So one long list of everything can beat a tidy set of groups, which is not how people
+          behave once a list runs off the screen. The off-screen penalty is what stops that, and the slider shows how
+          much work it is doing.
+        </p>
+      </details>
 
-      {measured && measured.length > 0 ? (
-        <>
-          <h2>How long it took</h2>
-          <p className="muted">
-            Time is a separate question from effort. A flat list can score well on effort and still be slower, because a
-            long list takes longer to read even when it takes fewer clicks. Times are medians, so someone who wandered off
-            mid-task cannot drag a column. The fastest time in each row is highlighted.
-          </p>
-          <div className="scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Scenario</th>
-                  {measured.map((m) => (
-                    <th key={m.schemeId}>{schemes.find((s) => s.id === m.schemeId)?.name ?? m.schemeId}</th>
+      <details>
+        <summary>How someone would get there — the cheapest route to every task</summary>
+        <div className="tabs">
+          {results.map((r) => (
+            <button
+              key={r.schemeId}
+              className={detail === r.schemeId ? 'tab active' : 'tab'}
+              onClick={() => setDetail(detail === r.schemeId ? null : r.schemeId)}
+            >
+              {r.schemeName}
+            </button>
+          ))}
+        </div>
+        {detail
+          ? results
+              .filter((r) => r.schemeId === detail)
+              .map((r) => (
+                <div key={r.schemeId} className="detail">
+                  {r.proposed.length > 0 ? (
+                    <p className="warn">
+                      Pages this menu invents, which do not exist in the product: {r.proposed.join(', ')}
+                    </p>
+                  ) : null}
+                  {r.duplicated.length > 0 ? (
+                    <p className="muted">
+                      Listed in more than one place:{' '}
+                      {r.duplicated.map((d) => `${d.destinationId} (${d.placements}×)`).join(', ')}
+                    </p>
+                  ) : null}
+                  {r.scenarios.map((s) => (
+                    <div key={s.scenarioId} className="scenario-detail">
+                      <h4>{s.persona}</h4>
+                      <ol>
+                        {s.tasks.map((t) => (
+                          <li key={t.prompt}>
+                            {t.cost === null ? (
+                              <span className="warn">no route to this: {t.prompt}</span>
+                            ) : (
+                              <>
+                                {t.prompt}
+                                <div className="path">
+                                  {t.labels?.join('  ›  ')} &mdash; {t.clicks} {t.clicks === 1 ? 'click' : 'clicks'},
+                                  effort {num(t.cost)}
+                                  {(() => {
+                                    const outcome = measured
+                                      ?.find((m) => m.schemeId === r.schemeId)
+                                      ?.tasks.find((x) => x.scenarioId === s.scenarioId && x.prompt === t.prompt);
+                                    if (!outcome || outcome.attempts === 0) return null;
+                                    return (
+                                      <span className="muted">
+                                        {' '}
+                                        · {outcome.successes}/{outcome.attempts} found it, {secs(outcome.medianMs)}
+                                      </span>
+                                    );
+                                  })()}
+                                </div>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {scenarios.map((scenario) => {
-                  const cells = measured.map((m) => m.scenarioOutcomes.find((o) => o.scenarioId === scenario.id));
-                  const times = cells.map((c) => c?.medianMs).filter((v): v is number => typeof v === 'number');
-                  const fastest = times.length ? Math.min(...times) : null;
-                  if (times.length === 0) return null;
-                  return (
-                    <tr key={scenario.id}>
-                      <th>
-                        <span className="rowlabel">{scenario.persona}</span>
-                        <span className="rowhint">
-                          {cells
-                            .map((c) => (c ? `${c.successes}/${c.attempts} found` : null))
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </span>
-                      </th>
-                      {cells.map((c, i) => (
-                        <td
-                          key={measured[i].schemeId}
-                          className={c?.medianMs !== null && c?.medianMs === fastest ? 'best' : undefined}
-                        >
-                          {secs(c?.medianMs ?? null)}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </>
-      ) : null}
+                </div>
+              ))
+          : null}
+      </details>
 
+      <h2>Results data</h2>
       <div className="actions">
         <button onClick={download} disabled={local.sessions === 0}>
-          Download results
+          Download from this browser
         </button>
         <label className="filebtn">
           Load a results file
@@ -505,77 +529,19 @@ export function Report() {
           className="ghost"
           onClick={() => {
             clearLocalResults();
-            setMeasured(null);
-            setMeasuredFrom(null);
+            setRaw(null);
+            setSource(null);
           }}
           disabled={local.sessions === 0}
         >
-          Clear results from this browser
+          Clear this browser
         </button>
       </div>
-      {loadError ? <p className="warn">Could not read that file: {loadError}</p> : null}
-
-      <h2>How someone would get there</h2>
-      <p className="muted">
-        The cheapest route to each task in one menu, so you can sanity-check the numbers above against the actual
-        clicks.
+      <p className="muted small">
+        <code>pnpm pull</code> writes every run from the database to <code>nav-lab-results.json</code>. Load that file
+        here.
       </p>
-      <div className="tabs">
-        {results.map((r) => (
-          <button
-            key={r.schemeId}
-            className={detail === r.schemeId ? 'tab active' : 'tab'}
-            onClick={() => setDetail(detail === r.schemeId ? null : r.schemeId)}
-          >
-            {r.schemeName}
-          </button>
-        ))}
-      </div>
-      {detail
-        ? results
-            .filter((r) => r.schemeId === detail)
-            .map((r) => (
-              <div key={r.schemeId} className="detail">
-                {r.proposed.length > 0 ? (
-                  <p className="warn">Pages this menu invents, which do not exist in the product: {r.proposed.join(', ')}</p>
-                ) : null}
-                {r.duplicated.length > 0 ? (
-                  <p className="muted">
-                    Listed in more than one place: {r.duplicated.map((d) => `${d.destinationId} (${d.placements}×)`).join(', ')}
-                  </p>
-                ) : null}
-                {r.scenarios.map((s) => (
-                  <div key={s.scenarioId} className="scenario-detail">
-                    <h4>{s.persona}</h4>
-                    <ol>
-                      {s.tasks.map((t) => (
-                        <li key={t.prompt}>
-                          {t.cost === null ? (
-                            <span className="warn">no route to this: {t.prompt}</span>
-                          ) : (
-                            <>
-                              {t.prompt}
-                              <div className="path">
-                                {t.labels?.join('  ›  ')} &mdash; {t.clicks} {t.clicks === 1 ? 'click' : 'clicks'},
-                                effort {num(t.cost)}
-                                {(() => {
-                                  const outcome = measured
-                                    ?.find((m) => m.schemeId === r.schemeId)
-                                    ?.tasks.find((x) => x.prompt === t.prompt);
-                                  if (!outcome || outcome.medianMs === null) return null;
-                                  return `, took ${secs(outcome.medianMs)} (${outcome.successes}/${outcome.attempts} found it)`;
-                                })()}
-                              </div>
-                            </>
-                          )}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                ))}
-              </div>
-            ))
-        : null}
+      {loadError ? <p className="warn">Could not read that file: {loadError}</p> : null}
     </div>
   );
 }
