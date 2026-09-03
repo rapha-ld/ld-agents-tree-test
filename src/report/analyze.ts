@@ -1,7 +1,12 @@
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
-import type { StudyEvent, StudySession } from '../session';
+import type { StudyEvent, StudyResponse, StudySession } from '../session';
 
-export type ResultsFile = { sessions: StudySession[]; events: StudyEvent[] };
+export type ResultsFile = {
+  sessions: StudySession[];
+  events: StudyEvent[];
+  /** Absent in files exported before the per-scenario question existed. */
+  responses?: StudyResponse[];
+};
 
 function findByLabels(scheme: Scheme, labels: string[]): SchemeNode | null {
   let level = scheme.sections;

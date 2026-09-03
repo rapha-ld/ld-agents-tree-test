@@ -36,6 +36,19 @@ export type StudySession = {
 };
 
 /**
+ * A free-text answer given once per scenario, before the participant sees the
+ * menu. `prompt` records the question as it was worded at the time, so
+ * rewording it later cannot silently change what old answers mean.
+ */
+export type StudyResponse = {
+  session_id: string;
+  scenario_id: string;
+  prompt: string;
+  response: string;
+  ts: string;
+};
+
+/**
  * Every write reports what actually happened, so a participant is never told
  * their answers were recorded when the write failed.
  */
@@ -49,17 +62,27 @@ export type SaveResult = {
 
 const LOCAL_KEY = 'nav-lab-results';
 
-function readLocal(): { sessions: StudySession[]; events: StudyEvent[] } {
+type LocalStore = { sessions: StudySession[]; events: StudyEvent[]; responses: StudyResponse[] };
+
+function readLocal(): LocalStore {
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
-    if (raw) return JSON.parse(raw) as { sessions: StudySession[]; events: StudyEvent[] };
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<LocalStore>;
+      return {
+        sessions: parsed.sessions ?? [],
+        events: parsed.events ?? [],
+        // Absent in anything written before responses existed.
+        responses: parsed.responses ?? [],
+      };
+    }
   } catch {
     // A corrupt or unavailable store should not stop a participant mid-study.
   }
-  return { sessions: [], events: [] };
+  return { sessions: [], events: [], responses: [] };
 }
 
-function writeLocal(data: { sessions: StudySession[]; events: StudyEvent[] }): boolean {
+function writeLocal(data: LocalStore): boolean {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
     return true;
@@ -117,6 +140,23 @@ export async function saveEvents(events: StudyEvent[]): Promise<SaveResult> {
 
   try {
     const { error } = await client.from('events').insert(events);
+    if (error) return { local, remote: 'failed', error: error.message };
+    return { local, remote: 'ok' };
+  } catch (e) {
+    return { local, remote: 'failed', error: describe(e) };
+  }
+}
+
+/** Written once per scenario, before the participant sees the menu. */
+export async function saveResponse(response: StudyResponse): Promise<SaveResult> {
+  const store = readLocal();
+  store.responses.push(response);
+  const local = writeLocal(store);
+
+  if (!client) return { local, remote: 'skipped' };
+
+  try {
+    const { error } = await client.from('responses').insert(response);
     if (error) return { local, remote: 'failed', error: error.message };
     return { local, remote: 'ok' };
   } catch (e) {

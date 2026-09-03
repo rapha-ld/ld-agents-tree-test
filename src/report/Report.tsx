@@ -3,6 +3,7 @@ import { destinations, scenarios, schemes, snapshotDate, weights } from '../data
 import { DEFAULT_PARAMS, scoreScheme, type CostParams } from '../score/cost';
 import { clearLocalResults, exportLocalResults, localResultCount, persistenceMode } from '../session';
 import { analyze, summarizeSessions, type ResultsFile, type SchemeOutcome } from './analyze';
+import { Answers } from './Answers';
 import { Heatmap, Lines, RankedBars, Scatter } from './charts';
 import { Participants } from './Participants';
 import { readExcluded, writeExcluded } from './excluded';
@@ -239,6 +240,17 @@ export function Report() {
               return outcome.successes / outcome.attempts;
             }}
             format={(v) => `${Math.round(v * 100)}%`}
+          />
+
+          <h2>What people expected to look for</h2>
+          <p className="muted small">
+            Asked once per scenario, in their own words, before they saw the menu. The gap between these words and the
+            labels in a menu is the thing a tree test is really measuring.
+          </p>
+          <Answers
+            responses={kept?.responses ?? []}
+            sessions={kept?.sessions ?? []}
+            scenarios={scenarios}
           />
 
           <h2>Who took it</h2>

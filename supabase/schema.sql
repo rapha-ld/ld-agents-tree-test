@@ -28,21 +28,39 @@ create table if not exists events (
 
 create index if not exists events_session_idx on events (session_id, scenario_id, task_index, seq);
 
-alter table sessions enable row level security;
-alter table events   enable row level security;
+-- What a participant says they would look for, asked once per scenario before
+-- they touch the menu. The wording of the question is stored next to the answer:
+-- if the prompt is ever reworded, old answers stay interpretable instead of
+-- quietly becoming answers to a question nobody was asked.
+create table if not exists responses (
+  id          bigserial primary key,
+  session_id  uuid        not null,
+  scenario_id text        not null,
+  prompt      text        not null,
+  response    text        not null,
+  ts          timestamptz not null
+);
+
+create index if not exists responses_session_idx on responses (session_id, scenario_id);
+
+alter table sessions  enable row level security;
+alter table events    enable row level security;
+alter table responses enable row level security;
 
 -- A session row is written at the start and updated once at the end, so the
 -- client needs update on its own row as well as insert.
 --
 -- Dropped first because create policy has no "if not exists", and this file is
 -- meant to be safe to re-run after an edit.
-drop policy if exists sessions_insert on sessions;
-drop policy if exists sessions_update on sessions;
-drop policy if exists events_insert   on events;
+drop policy if exists sessions_insert   on sessions;
+drop policy if exists sessions_update   on sessions;
+drop policy if exists events_insert     on events;
+drop policy if exists responses_insert  on responses;
 
-create policy sessions_insert on sessions for insert to anon with check (true);
-create policy sessions_update on sessions for update to anon using (true) with check (true);
-create policy events_insert   on events   for insert to anon with check (true);
+create policy sessions_insert  on sessions  for insert to anon with check (true);
+create policy sessions_update  on sessions  for update to anon using (true) with check (true);
+create policy events_insert    on events    for insert to anon with check (true);
+create policy responses_insert on responses for insert to anon with check (true);
 
 -- Table privileges, which are separate from the policies above and easy to
 -- forget. A policy narrows an existing privilege; it does not grant one. Without
@@ -52,11 +70,13 @@ create policy events_insert   on events   for insert to anon with check (true);
 -- anon gets exactly what the study needs and nothing more. No select: that is
 -- what keeps the public bundle unable to read anyone's answers, and it is why
 -- the report is a local tool rather than a page behind a login.
-grant insert, update on table sessions to anon;
-grant insert          on table events   to anon;
+grant insert, update on table sessions  to anon;
+grant insert          on table events    to anon;
+grant insert          on table responses to anon;
 
--- events.id is a bigserial, so inserting a row also consumes the sequence.
-grant usage on sequence events_id_seq to anon;
+-- Both are bigserial, so inserting a row also consumes the sequence.
+grant usage on sequence events_id_seq    to anon;
+grant usage on sequence responses_id_seq to anon;
 
 -- Marking a run finished is "update sessions set finished_at = ... where id = ...",
 -- and Postgres requires select privilege on every column named in a where clause.
@@ -74,4 +94,4 @@ grant select (id) on table sessions to anon;
 --
 -- Delete is granted to service_role only, never to anon: a participant must not
 -- be able to remove anyone's answers, including their own.
-grant select, delete on table sessions, events to service_role;
+grant select, delete on table sessions, events, responses to service_role;

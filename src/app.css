@@ -72,7 +72,8 @@ code { background: #f0f1f5; padding: 0.1em 0.35em; border-radius: 3px; font-size
 
 .field { display: block; margin: 1.25rem 0; font-size: 0.9rem; color: var(--muted); }
 .field input,
-.field select {
+.field select,
+.field textarea {
   display: block;
   width: 100%;
   margin-top: 0.35rem;
@@ -83,6 +84,8 @@ code { background: #f0f1f5; padding: 0.1em 0.35em; border-radius: 3px; font-size
   border: 1px solid var(--line);
   border-radius: 6px;
 }
+.field textarea { resize: vertical; box-sizing: border-box; }
+.field .hint { display: block; margin-top: 0.35rem; font-size: 0.8rem; color: var(--muted); }
 
 /* --- start over ------------------------------------------------------------ */
 
@@ -391,3 +394,12 @@ table.participants tr.excluded .pname { text-decoration: line-through; }
   font: inherit;
   text-decoration: underline;
 }
+
+/* --- what people expected to look for ------------------------------------- */
+.answers { margin-bottom: 1.5rem; }
+.answers details { margin: 0; border-bottom: 1px solid var(--line); }
+.answers summary { padding: 0.5rem 0; color: var(--ink); font-size: 0.9rem; }
+.answers ul { margin: 0 0 0.75rem; padding: 0; list-style: none; }
+.answers li { display: flex; gap: 0.75rem; padding: 0.3rem 0; font-size: 0.86rem; }
+.answer-who { flex: 0 0 8rem; color: var(--muted); }
+.answer-text { flex: 1; }

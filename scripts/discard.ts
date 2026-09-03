@@ -8,9 +8,10 @@
  * almost always. Use this when a run should not exist: a pilot, a colleague
  * clicking around, a duplicate.
  *
- * Events go first. If the run is deleted and the events are not, the events are
- * orphaned and every later read has to know to ignore them; the reverse just
- * leaves a session with no answers, which the report already handles.
+ * Children go before the parent. If the session is deleted first and a child
+ * delete then fails, the children are orphaned and every later read has to know
+ * to ignore them; this order leaves at worst a session with no answers, which
+ * the report already handles.
  */
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllRows } from '../src/pull/paged';
@@ -75,11 +76,20 @@ if (events.error) {
   process.exit(1);
 }
 
+const responses = await client.from('responses').delete({ count: 'exact' }).eq('session_id', id);
+if (responses.error) {
+  console.error(`Deleted ${events.count ?? 0} events, but could not delete the answers: ${responses.error.message}`);
+  process.exit(1);
+}
+
 const session = await client.from('sessions').delete({ count: 'exact' }).eq('id', id);
 if (session.error) {
   console.error(`Deleted ${events.count ?? 0} events, but could not delete the session: ${session.error.message}`);
   process.exit(1);
 }
 
-console.log(`Deleted ${who}'s run of ${existing[0].scheme_id}: ${events.count ?? 0} events, ${session.count ?? 0} session.`);
+console.log(
+  `Deleted ${who}'s run of ${existing[0].scheme_id}: ` +
+    `${events.count ?? 0} events, ${responses.count ?? 0} answers, ${session.count ?? 0} session.`,
+);
 console.log('Run pnpm pull to refresh nav-lab-results.json.');

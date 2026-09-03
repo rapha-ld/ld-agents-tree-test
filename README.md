@@ -277,11 +277,32 @@ so nothing is hidden behind a URL you have to know:
 - **Study** is what a participant takes.
 - **Report** compares the schemes and shows results.
 
-On the start screen, **Which menu to test** picks the scheme. It lists the `name` from
-each scheme's frontmatter, so renaming a scheme to something neutral like `Menu A` is a
-one-line edit and participants never see which one is today's navigation. Leave it on
-*Pick one at random* for real studies: random assignment is what keeps schemes
-comparable, and the hint under the dropdown says so.
+### Sending it to someone
+
+The menu is decided by the link, not by the participant. Send one link per menu:
+
+```
+https://launchdarkly-labs.github.io/ld-nav-lab/?scheme=lifecycle
+```
+
+The id is the `id` from the scheme file's frontmatter, and `pnpm score` lists them. Three
+things can happen:
+
+| The link says | What the participant gets |
+| --- | --- |
+| a known id | that menu |
+| no `?scheme=` at all | one at random, so a bare link still works |
+| an id that does not exist | a "this link is not quite right" screen, and no run starts |
+
+That last row is deliberate. Falling back to random would file the run against a menu
+nobody meant to test, and a typo in a link sent to twenty people is worth catching
+loudly.
+
+Participants never see which menu they got, or that there are others. Renaming a scheme's
+`name` to something neutral is still worth doing if the report is ever on screen near
+them, but the study itself no longer shows it.
+
+The start screen asks for a name and requires it.
 
 **Start over** sits at the top of every screen during a run. It asks for confirmation,
 then returns to the start screen with a fresh session. The abandoned run is left
@@ -289,9 +310,19 @@ unfinished, and only finished runs are counted, so restarting never pollutes res
 If you are exporting from Supabase by hand, filter to `finished_at is not null` for the
 same reason.
 
+### What each scenario asks first
+
+Before the menu appears, each scenario asks **"What navigation label would you look
+for?"** as free text, and requires an answer. It is asked first so it cannot be revised
+once the real labels are on screen, which is the whole point of asking.
+
+The answers show up in the report under **What people expected to look for**, grouped by
+scenario so you can compare the words different people reach for on the same job. The
+question's wording is stored with every answer, so rewording it later does not silently
+change what old answers mean.
+
 Other behaviour:
 
-- `?scheme=<id>` preselects a scheme, which is handy for a link you hand to someone.
 - Scenario order is randomised per participant.
 - Labels only. No content, no correctness feedback, and an explicit
   "I would not know where to look" on every task.

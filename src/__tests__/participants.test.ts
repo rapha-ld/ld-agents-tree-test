@@ -174,3 +174,21 @@ describe('first-click reporting', () => {
     expect(outcome.firstClickRate).toBe(0);
   });
 });
+
+/**
+ * Results files exported before the per-scenario question existed have no
+ * `responses` key at all. Loading one must still work rather than throwing.
+ */
+describe('older results files', () => {
+  it('analyzes a file with no responses key', () => {
+    seq = 0;
+    const legacy = {
+      sessions: [session('s1', '2026-08-31T10:05:00.000Z', 'Priya')],
+      events: [event('s1', 'start', 0, null, 0), event('s1', 'submit', 0, 'y', 1)],
+    } as ResultsFile;
+
+    const [outcome] = analyze(legacy, [scheme], [scenario]);
+    expect(outcome.successRate).toBe(1);
+    expect(summarizeSessions(legacy, [scenario])).toHaveLength(1);
+  });
+});

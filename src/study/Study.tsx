@@ -6,6 +6,7 @@ import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
   persistenceMode,
   saveEvents,
+  saveResponse,
   saveSession,
   type EventKind,
   type SaveResult,
@@ -13,7 +14,11 @@ import {
   type StudySession,
 } from '../session';
 
-const RANDOM = 'random';
+/**
+ * Asked once per scenario, before the participant can see the menu. Stored with
+ * each answer so rewording it later cannot change what old answers mean.
+ */
+export const LABEL_PROMPT = 'What navigation label would you look for?';
 
 /** Fisher-Yates. Scenario order varies per participant. */
 function shuffled<T>(items: T[]): T[] {
@@ -25,17 +30,26 @@ function shuffled<T>(items: T[]): T[] {
   return out;
 }
 
-function initialChoice(): string {
+/**
+ * Which menu this participant gets, from `?scheme=<id>` in the link.
+ *
+ * Participants no longer choose: the operator sends a link per menu, so
+ * assignment is a property of the link rather than something a participant can
+ * change. Three outcomes, kept distinct on purpose:
+ *
+ * - a known id: use it.
+ * - no parameter at all: assign at random, which keeps a bare link usable.
+ * - an id we do not recognise: refuse to start. Falling back to random here
+ *   would attribute the run to a menu nobody meant to test, and a typo in a
+ *   link sent to twenty people is worth catching loudly.
+ */
+function requestedScheme(): { scheme: Scheme; assigned: 'link' | 'random' } | { badId: string } {
   const wanted = new URLSearchParams(window.location.search).get('scheme');
-  return wanted && schemes.some((s) => s.id === wanted) ? wanted : RANDOM;
-}
-
-function resolveScheme(choice: string): Scheme {
-  const found = schemes.find((s) => s.id === choice);
-  if (found) return found;
-  // Uniform random assignment: the insert-only table gives the client no way to
-  // read existing counts and balance them.
-  return schemes[Math.floor(Math.random() * schemes.length)];
+  if (wanted === null || wanted === '') {
+    return { scheme: schemes[Math.floor(Math.random() * schemes.length)], assigned: 'random' };
+  }
+  const found = schemes.find((s) => s.id === wanted);
+  return found ? { scheme: found, assigned: 'link' } : { badId: wanted };
 }
 
 /**
@@ -52,8 +66,9 @@ function contextParagraphs(scenario: Scenario): string[] {
 type Phase = 'intro' | 'scenario' | 'task' | 'done';
 
 export function Study() {
-  const [choice, setChoice] = useState(initialChoice);
-  // Resolved when the run starts, so picking Random gives a fresh draw each time.
+  // Fixed for the whole visit: the link decides the menu, so re-reading it per
+  // run cannot hand the same person a different menu on a second attempt.
+  const [assignment] = useState(requestedScheme);
   const [scheme, setScheme] = useState<Scheme | null>(null);
   const [order, setOrder] = useState<Scenario[]>(() => shuffled(scenarios));
   const [phase, setPhase] = useState<Phase>('intro');
@@ -61,6 +76,7 @@ export function Study() {
   const [taskIndex, setTaskIndex] = useState(0);
   const [trail, setTrail] = useState<SchemeNode[]>([]);
   const [label, setLabel] = useState('');
+  const [guess, setGuess] = useState('');
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [saveIssue, setSaveIssue] = useState<string | null>(null);
   const [mode, setMode] = useState<string | null>(null);
@@ -160,7 +176,8 @@ export function Study() {
   );
 
   const start = async () => {
-    const resolved = resolveScheme(choice);
+    if ('badId' in assignment || label.trim() === '') return;
+    const resolved = assignment.scheme;
     setScheme(resolved);
     setMode(defaultMode(resolved));
     sessionStart.current = Date.now();
@@ -186,10 +203,27 @@ export function Study() {
     setScenarioIndex(0);
     setTaskIndex(0);
     setTrail([]);
+    setGuess('');
     setPhase('intro');
   };
 
-  const beginTask = () => {
+  /**
+   * Save what they said they would look for, then let them at the menu. The
+   * answer is written before the first task so it cannot be revised once the
+   * real labels are on screen, which is the whole point of asking first.
+   */
+  const beginTask = async () => {
+    if (!scenario || guess.trim() === '') return;
+    noteSave(
+      await saveResponse({
+        session_id: sessionId.current,
+        scenario_id: scenario.id,
+        prompt: LABEL_PROMPT,
+        response: guess.trim(),
+        ts: new Date().toISOString(),
+      }),
+    );
+    setGuess('');
     taskStart.current = Date.now();
     setTrail([]);
     record('start');
@@ -320,6 +354,20 @@ export function Study() {
     </div>
   );
 
+  // A link with an unknown menu id is a broken link. Starting anyway would file
+  // the run against a menu nobody meant to test, so it stops here instead.
+  if ('badId' in assignment) {
+    return (
+      <div className="card">
+        <h1>This link is not quite right</h1>
+        <p>
+          It asks for a menu called <code>{assignment.badId}</code>, which does not exist. Please ask whoever sent it
+          for a new one.
+        </p>
+      </div>
+    );
+  }
+
   if (phase === 'intro' || !scheme) {
     return (
       <>
@@ -335,27 +383,22 @@ export function Study() {
         </p>
 
         <label className="field">
-          Select navigation scheme
-          <select value={choice} onChange={(e) => setChoice(e.target.value)}>
-            <option value={RANDOM}>Pick one at random</option>
-            {schemes.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="field">
-          Your Name
-          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="optional" />
+          Your name
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void start();
+            }}
+          />
         </label>
 
         {persistenceMode === 'local' ? (
           <p className="muted small">Database not connected. Results are being saved locally.</p>
         ) : null}
 
-        <button className="primary" onClick={() => void start()}>
+        <button className="primary" onClick={() => void start()} disabled={label.trim() === ''}>
           Start
         </button>
         </div>
@@ -380,7 +423,30 @@ export function Study() {
           {scenario.tasks.length} {scenario.tasks.length === 1 ? 'task' : 'tasks'}. The scenario stays on screen while
           you work.
         </p>
-        <button className="primary" onClick={beginTask}>
+
+        <label className="field">
+          {LABEL_PROMPT}
+          <textarea
+            value={guess}
+            onChange={(e) => setGuess(e.target.value)}
+            rows={3}
+            autoFocus
+            onKeyDown={(e) => {
+              // Enter submits, so the answer can be given without reaching for
+              // the mouse. Shift+Enter still makes a new line.
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void beginTask();
+              }
+            }}
+          />
+          <span className="hint">
+            In your own words, before you see the menu. There is no right answer, and a guess is more useful than a
+            blank.
+          </span>
+        </label>
+
+        <button className="primary" onClick={() => void beginTask()} disabled={guess.trim() === ''}>
           Continue
         </button>
         </div>

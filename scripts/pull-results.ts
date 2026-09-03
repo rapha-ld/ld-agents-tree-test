@@ -16,7 +16,7 @@ import { createClient } from '@supabase/supabase-js';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fetchAllRows } from '../src/pull/paged';
-import type { StudyEvent, StudySession } from '../src/session';
+import type { StudyEvent, StudyResponse, StudySession } from '../src/session';
 
 try {
   process.loadEnvFile('.env.local');
@@ -50,13 +50,19 @@ async function pull() {
     return { data: data as StudyEvent[] | null, error };
   });
 
-  return { sessions, events };
+  const responses = await fetchAllRows<StudyResponse>(async (from, to) => {
+    const { data, error } = await client.from('responses').select('*').order('id').range(from, to);
+    return { data: data as StudyResponse[] | null, error };
+  });
+
+  return { sessions, events, responses };
 }
 
 let sessions: StudySession[];
 let events: StudyEvent[];
+let responses: StudyResponse[];
 try {
-  ({ sessions, events } = await pull());
+  ({ sessions, events, responses } = await pull());
 } catch (e) {
   const message = e instanceof Error ? e.message : String(e);
   console.error(`Could not read the study tables: ${message}`);
@@ -70,10 +76,11 @@ try {
 }
 
 const outPath = join(process.cwd(), 'nav-lab-results.json');
-writeFileSync(outPath, `${JSON.stringify({ sessions, events }, null, 2)}\n`);
+writeFileSync(outPath, `${JSON.stringify({ sessions, events, responses }, null, 2)}\n`);
 
 const finished = sessions.filter((s) => s.finished_at).length;
 
 console.log(`sessions:  ${sessions.length} (${finished} finished, ${sessions.length - finished} abandoned)`);
 console.log(`events:    ${events.length}`);
+console.log(`answers:   ${responses.length} (what people said they would look for)`);
 console.log(`written:   ${outPath}`);
