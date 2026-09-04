@@ -15,10 +15,15 @@ import {
 } from '../session';
 
 /**
- * Asked once per scenario, before the participant can see the menu. Stored with
- * each answer so rewording it later cannot change what old answers mean.
+ * Asked once per task, before the participant can see the menu for that task.
+ * Stored with each answer so rewording it later cannot change what old answers
+ * mean.
+ *
+ * Per task rather than per scenario: one scenario covers several different jobs,
+ * and the word someone reaches for when turning a flag off is not the word they
+ * reach for when checking whether it worked.
  */
-export const LABEL_PROMPT = 'What navigation label would you look for?';
+export const LABEL_PROMPT = 'What would you call the section you would look in?';
 
 /** Fisher-Yates. Scenario order varies per participant. */
 function shuffled<T>(items: T[]): T[] {
@@ -63,7 +68,7 @@ function contextParagraphs(scenario: Scenario): string[] {
     .filter(Boolean);
 }
 
-type Phase = 'intro' | 'scenario' | 'task' | 'done';
+type Phase = 'intro' | 'scenario' | 'expect' | 'task' | 'done';
 
 export function Study() {
   // Fixed for the whole visit: the link decides the menu, so re-reading it per
@@ -208,16 +213,17 @@ export function Study() {
   };
 
   /**
-   * Save what they said they would look for, then let them at the menu. The
-   * answer is written before the first task so it cannot be revised once the
-   * real labels are on screen, which is the whole point of asking first.
+   * Save what they said they would look for on this task, then let them at the
+   * menu. Written before the menu appears so it cannot be revised once the real
+   * labels are on screen, which is the whole point of asking first.
    */
-  const beginTask = async () => {
+  const submitExpectation = async () => {
     if (!scenario || guess.trim() === '') return;
     noteSave(
       await saveResponse({
         session_id: sessionId.current,
         scenario_id: scenario.id,
+        task_index: taskIndex,
         prompt: LABEL_PROMPT,
         response: guess.trim(),
         ts: new Date().toISOString(),
@@ -237,12 +243,13 @@ export function Study() {
 
       const isLastTask = taskIndex + 1 >= (scenario?.tasks.length ?? 0);
       if (!isLastTask) {
-        const nextTask = taskIndex + 1;
-        setTaskIndex(nextTask);
+        // The next task asks what they expect before showing the menu again, so
+        // the 'start' event is recorded there rather than here.
+        setTaskIndex(taskIndex + 1);
         setTrail([]);
-        taskStart.current = Date.now();
         seq.current = 0;
-        record('start', undefined, { taskIndex: nextTask, trail: [] });
+        setGuess('');
+        setPhase('expect');
         return;
       }
 
@@ -424,19 +431,49 @@ export function Study() {
           you work.
         </p>
 
+        <button
+          className="primary"
+          autoFocus
+          onClick={() => {
+            setGuess('');
+            setPhase('expect');
+          }}
+        >
+          Continue
+        </button>
+        </div>
+        {saveNotice}
+      </>
+    );
+  }
+
+  /**
+   * Step one of every task: the job in words, and what they would call the
+   * section, before any menu is on screen. Asking first is the whole point, so
+   * the menu is not rendered anywhere on this page.
+   */
+  if (phase === 'expect' && scenario && task) {
+    return (
+      <>
+        <div className="card">
+        {restartBar}
+        {scenarioProgress}
+        {scenarioContext}
+        <h2 className="prompt">{task.prompt}</h2>
+
         <label className="field">
           {LABEL_PROMPT}
           <textarea
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
-            rows={3}
+            rows={2}
             autoFocus
             onKeyDown={(e) => {
               // Enter submits, so the answer can be given without reaching for
               // the mouse. Shift+Enter still makes a new line.
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                void beginTask();
+                void submitExpectation();
               }
             }}
           />
@@ -446,8 +483,8 @@ export function Study() {
           </span>
         </label>
 
-        <button className="primary" onClick={() => void beginTask()} disabled={guess.trim() === ''}>
-          Continue
+        <button className="primary" onClick={() => void submitExpectation()} disabled={guess.trim() === ''}>
+          Show me the menu
         </button>
         </div>
         {saveNotice}

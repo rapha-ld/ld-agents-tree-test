@@ -279,10 +279,17 @@ so nothing is hidden behind a URL you have to know:
 
 ### Sending it to someone
 
-The menu is decided by the link, not by the participant. Send one link per menu:
+The menu is decided by the link, not by the participant. Send one link per menu.
+
+Run `pnpm dev` and open **#/send** for the moderator screen: it lists every menu with its
+top-level shape and a copy-ready link, and lets you point the links at a different
+deployment. Like the report, it is a dev-only view, because it names the menus and a
+participant must not see that there are others.
+
+The link looks like this:
 
 ```
-https://launchdarkly-labs.github.io/ld-nav-lab/?scheme=lifecycle
+https://launchdarkly-labs.github.io/ld-nav-lab/?scheme=scheme-a
 ```
 
 The id is the `id` from the scheme file's frontmatter, and `pnpm score` lists them. Three
@@ -310,16 +317,20 @@ unfinished, and only finished runs are counted, so restarting never pollutes res
 If you are exporting from Supabase by hand, filter to `finished_at is not null` for the
 same reason.
 
-### What each scenario asks first
+### What each task asks first
 
-Before the menu appears, each scenario asks **"What navigation label would you look
-for?"** as free text, and requires an answer. It is asked first so it cannot be revised
-once the real labels are on screen, which is the whole point of asking.
+Every task runs in two steps. Step one shows the task and asks **"What would you call the
+section you would look in?"** as free text, and requires an answer. No menu is on screen.
+Step two shows the menu and they click through it.
+
+Asked per task rather than per scenario: a scenario covers several different jobs, and the
+word someone reaches for when turning a flag off is not the word they reach for when
+checking whether it worked.
 
 The answers show up in the report under **What people expected to look for**, grouped by
-scenario so you can compare the words different people reach for on the same job. The
-question's wording is stored with every answer, so rewording it later does not silently
-change what old answers mean.
+task, with the menu that person was on shown beside each answer so a word that only
+appears in one arm is visible as such. The question's wording is stored with every answer,
+so rewording it later does not silently change what old answers mean.
 
 Other behaviour:
 
