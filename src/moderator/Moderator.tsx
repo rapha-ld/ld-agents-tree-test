@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react';
-import { scenarios, schemes } from '../data';
+import { useState } from 'react';
+import { schemes } from '../data';
+import { persistenceMode } from '../session';
 import type { SchemeNode } from '../parse/types';
 
-/**
- * Where the study is published. A link built from the dev server's own origin
- * would only work on this machine, which is exactly the mistake worth designing
- * out: the whole point of this screen is producing a link to send someone else.
- */
+/** Where the study is published, offered as an alternative to this machine. */
 const PUBLISHED = 'https://launchdarkly-labs.github.io/ld-nav-lab/';
+
+/** This dev server, which is what a link should point at while you are testing. */
+function here() {
+  return window.location.href.split('#')[0].split('?')[0];
+}
 
 function countNodes(nodes: SchemeNode[]): { sections: number; items: number } {
   let items = 0;
@@ -22,15 +24,12 @@ function countNodes(nodes: SchemeNode[]): { sections: number; items: number } {
 }
 
 export function Moderator() {
-  const [base, setBase] = useState(PUBLISHED);
+  const [base, setBase] = useState(here);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const taskCount = useMemo(() => scenarios.reduce((n, s) => n + s.tasks.length, 0), []);
-
   const linkFor = (id: string) => {
-    const trimmed = base.trim().replace(/\?.*$/, '');
-    const sep = trimmed.includes('?') ? '&' : '?';
-    return `${trimmed}${sep}scheme=${encodeURIComponent(id)}`;
+    const trimmed = base.trim().replace(/[?#].*$/, '');
+    return `${trimmed}?scheme=${encodeURIComponent(id)}`;
   };
 
   const copy = async (id: string) => {
@@ -44,37 +43,45 @@ export function Moderator() {
     }
   };
 
+  const isPublished = base.trim().replace(/[?#].*$/, '') === PUBLISHED;
+
   return (
     <div className="report">
       <h1>Send the study</h1>
-      <p className="muted">
-        Each participant sees one menu, decided by the link. Pick the menu, copy its link, send it. Their answers are
-        filed against that menu, so a participant who gets the wrong link lands in the wrong arm of the study and there
-        is no way to tell afterwards.
-      </p>
-      <p className="muted small">
-        {schemes.length} menus &middot; {scenarios.length} scenarios &middot; {taskCount} tasks. Participants never see
-        which menu they got, or that there are others.
-      </p>
 
       <label className="field">
-        Where the study is published
+        Link points at
         <input value={base} onChange={(e) => setBase(e.target.value)} spellCheck={false} />
         <span className="hint">
-          Change this if you are testing against a different deployment. Use{' '}
-          <button className="linklike" onClick={() => setBase(window.location.href.split('#')[0])}>
-            this machine
+          <button className="linklike" onClick={() => setBase(here())}>
+            This machine
           </button>{' '}
-          for a link that only works here, which is fine when you are sitting beside the participant.
+          &middot;{' '}
+          <button className="linklike" onClick={() => setBase(PUBLISHED)}>
+            Published site
+          </button>
         </span>
       </label>
+
+      {isPublished ? (
+        <p className="warn">
+          The published site only has the menus that were on <code>main</code> when it last deployed. If a link there
+          says the menu does not exist, push to <code>main</code> and wait for the Pages deploy.
+        </p>
+      ) : null}
+
+      {persistenceMode === 'local' ? (
+        <p className="warn">
+          Database not connected here, so runs taken through these links stay in the participant&rsquo;s own browser.
+        </p>
+      ) : null}
 
       <table className="detail">
         <thead>
           <tr>
             <th>Menu</th>
             <th>Top level</th>
-            <th>Link to send</th>
+            <th>Link</th>
             <th />
           </tr>
         </thead>
@@ -106,12 +113,6 @@ export function Moderator() {
           })}
         </tbody>
       </table>
-
-      <p className="muted small">
-        A link with no <code>?scheme=</code> assigns a menu at random, and a link naming a menu that does not exist
-        refuses to start rather than falling back to random. Both are deliberate: a typo in a link sent to twenty people
-        is worth catching loudly.
-      </p>
     </div>
   );
 }
