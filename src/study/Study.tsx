@@ -25,15 +25,17 @@ import {
  */
 export const LABEL_PROMPT = 'What navigation label would you look for?';
 
-/** Fisher-Yates. Scenario order varies per participant. */
-function shuffled<T>(items: T[]): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
+/**
+ * Scenarios run in the order they are authored, which `src/data.ts` takes from
+ * the filenames. They were shuffled per participant to spread order effects
+ * across the sample; they are not any more, because the scenarios tell a
+ * sequence. Someone shipping their first flag has not had a pager go off yet,
+ * and a run that opens on the incident asks them to fix something they never
+ * released. Every participant now sees the same order, which trades order
+ * effects for a coherent story and makes runs directly comparable.
+ *
+ * Tasks inside a scenario were already in file order.
+ */
 
 /**
  * Which menu this participant gets, from `?scheme=<id>` in the link.
@@ -88,7 +90,6 @@ export function Study() {
   const [assignment] = useState(requestedScheme);
   const [studyShape] = useState(() => shape(scenarios));
   const [scheme, setScheme] = useState<Scheme | null>(null);
-  const [order, setOrder] = useState<Scenario[]>(() => shuffled(scenarios));
   const [phase, setPhase] = useState<Phase>('intro');
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [taskIndex, setTaskIndex] = useState(0);
@@ -107,7 +108,7 @@ export function Study() {
   /** Bumped each time this task's label answer is submitted again after a step back. */
   const revision = useRef(0);
 
-  const scenario: Scenario | undefined = order[scenarioIndex];
+  const scenario: Scenario | undefined = scenarios[scenarioIndex];
   const task = scenario?.tasks[taskIndex];
 
   const record = useCallback(
@@ -219,7 +220,6 @@ export function Study() {
     setSaveIssue(null);
     setScheme(null);
     setMode(null);
-    setOrder(shuffled(scenarios));
     setScenarioIndex(0);
     setTaskIndex(0);
     setTrail([]);
@@ -272,7 +272,7 @@ export function Study() {
         return;
       }
 
-      const isLastScenario = scenarioIndex + 1 >= order.length;
+      const isLastScenario = scenarioIndex + 1 >= scenarios.length;
       if (isLastScenario) {
         if (scheme) noteSave(await saveSession(session(scheme.id, true)));
         setPhase('done');
@@ -286,7 +286,7 @@ export function Study() {
       revision.current = 0;
       setPhase('scenario');
     },
-    [flush, noteSave, order.length, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
+    [flush, noteSave, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
   );
 
   const choose = (node: SchemeNode) => {
@@ -349,7 +349,7 @@ export function Study() {
     <div className="progress-block">
       <p className="progress-meta">
         <span>
-          Scenario {scenarioIndex + 1} of {order.length}
+          Scenario {scenarioIndex + 1} of {scenarios.length}
         </span>
         <span>
           Task {taskIndex + 1} of {scenarioTasks}
@@ -471,7 +471,7 @@ export function Study() {
         <div className="card">
         {restartBar}
         <p className="muted small">
-          Scenario {scenarioIndex + 1} of {order.length}
+          Scenario {scenarioIndex + 1} of {scenarios.length}
         </p>
         {contextParagraphs(scenario).map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>

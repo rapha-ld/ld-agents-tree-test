@@ -187,8 +187,8 @@ is how you avoid punishing someone for stopping at a sensible parent.
 ### Adding a scenario or a task
 
 Drop a new `.md` file in `scenarios/`, or add a `##` block to an existing one. Both are
-picked up automatically. The numeric filename prefix is for your own ordering only;
-scenario order is randomised per participant, so it has no effect on a run.
+picked up automatically. **The numeric filename prefix decides the order participants see**,
+so a new scenario needs a prefix that puts it where it belongs in the sequence.
 
 What makes one worth adding:
 
@@ -334,7 +334,12 @@ so rewording it later does not silently change what old answers mean.
 
 Other behaviour:
 
-- Scenario order is randomised per participant.
+- Scenario order is fixed, taken from the filename prefixes, and the same for
+  everyone. It was randomised per participant; it is not any more, because the
+  scenarios tell a sequence. Someone shipping their first flag has not had a pager
+  go off yet, and a run that opens on the incident asks them to fix something they
+  never released. That trades order effects for a coherent story and makes runs
+  directly comparable.
 - Labels only. No content, no correctness feedback, and an explicit
   "I would not know where to look" on every task.
 

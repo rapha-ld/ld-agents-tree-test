@@ -12,7 +12,7 @@ whether the change actually helps.
 targets: flags
 accept: flags.new
 
-## Create an A/B test on the flag
+## Create an A/B test on the flag.
 targets: experiments
 accept: experiments.new, flag.experiments
 

@@ -12,6 +12,6 @@ has cleared.
 ## Where would you go to find out how much your engineers spent running their coding agents last month?
 targets: agentrouter.usage
 
-## Stop your team's agents from using an AI model that is not approved for them
+## Stop your team's agents from using an AI model that is not approved for them.
 targets: agentrouter.policies
 accept: agentrouter.access
