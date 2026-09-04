@@ -50,6 +50,12 @@ export type Scheme = {
 
 export type Task = {
   prompt: string;
+  /**
+   * Overrides the default label question for this task. Some tasks read better
+   * as a situation followed by a specific question than as one generic question
+   * asked about a situation. Absent means the default is used.
+   */
+  question?: string;
   targets: string[];
   accept: string[];
 };

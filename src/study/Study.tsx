@@ -25,6 +25,11 @@ import {
  */
 export const LABEL_PROMPT = 'What navigation label would you look for?';
 
+/** A task can override the question; most do not. */
+function questionFor(task: { question?: string } | undefined): string {
+  return task?.question ?? LABEL_PROMPT;
+}
+
 /**
  * Scenarios run in the order they are authored, which `src/data.ts` takes from
  * the filenames. They were shuffled per participant to spread order effects
@@ -241,7 +246,7 @@ export function Study() {
         scenario_id: scenario.id,
         task_index: taskIndex,
         revision: revision.current,
-        prompt: LABEL_PROMPT,
+        prompt: questionFor(task),
         response: guess.trim(),
         ts: new Date().toISOString(),
       }),
@@ -525,7 +530,7 @@ export function Study() {
         {taskHeading}
 
         <label className="field">
-          {LABEL_PROMPT}
+          {questionFor(task)}
           <input
             value={guess}
             onChange={(e) => setGuess(e.target.value)}

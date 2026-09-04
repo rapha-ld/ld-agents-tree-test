@@ -15,6 +15,7 @@ accept: flag.targeting
 targets: contexts
 accept: contexts.instance, live
 
-## A teammate has fixed the issue with the flag. They have sent it to you to review before they release the fix.
+## A teammate made a change to the new login flow and is waiting on your sign-off before it takes effect for your users.
+question: Where do you go to review it?
 targets: approvals
 accept: flag.approval

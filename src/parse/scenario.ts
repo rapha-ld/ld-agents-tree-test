@@ -36,6 +36,14 @@ export function parseScenario(src: string, filename = '<scenario>'): Scenario {
       continue;
     }
 
+    const question = /^question:\s*(.*)$/.exec(line);
+    if (question) {
+      if (!current) throw new Error(`${filename}: \`question:\` appears before any \`##\` task heading`);
+      const text = question[1].trim();
+      if (text !== '') current.question = text;
+      continue;
+    }
+
     const accept = /^accept:\s*(.*)$/.exec(line);
     if (accept) {
       if (!current) throw new Error(`${filename}: \`accept:\` appears before any \`##\` task heading`);
