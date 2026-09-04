@@ -701,20 +701,29 @@ export function Study() {
   return (
     <>
       <div className="card">
-      <h1>Done</h1>
+      <h1>Thank you</h1>
       {saveIssue ? (
         <p>
-          Thank you. Please let whoever is running this study know that the message above appeared, because your answers
-          may not have been stored.
+          That is everything. Please let whoever is running this study know that the message above appeared, because some
+          of your answers may not have been saved.
         </p>
       ) : (
-        <p>Thank you. Your answers are recorded.</p>
+        <>
+          <p>That is everything, and your answers are recorded.</p>
+          <p>
+            This goes straight into how we lay out LaunchDarkly&rsquo;s navigation. The places you paused tell us as
+            much as the ones you went straight to, so there was no wrong way to do this.
+          </p>
+        </>
       )}
       {saveIssue === null && persistenceMode === 'local' ? (
         <p className="muted small">Database not connected. Results are saved locally.</p>
       ) : null}
+      {/* Quiet rather than primary. For a participant the study has ended, and
+          starting a second run against the same link files a duplicate; it is
+          here for whoever is moderating. */}
       <div className="actions">
-        <button className="primary" onClick={restart}>
+        <button className="ghost" onClick={restart}>
           Run it again
         </button>
         {reportIncluded ? (
