@@ -36,13 +36,18 @@ export type StudySession = {
 };
 
 /**
- * A free-text answer given once per scenario, before the participant sees the
- * menu. `prompt` records the question as it was worded at the time, so
+ * A free-text answer given once per task, before the participant sees the menu
+ * for that task. `prompt` records the question as it was worded at the time, so
  * rewording it later cannot silently change what old answers mean.
+ *
+ * Asked per task rather than per scenario: a scenario covers several different
+ * jobs, and the word someone reaches for when turning a flag off is not the word
+ * they reach for when checking a result.
  */
 export type StudyResponse = {
   session_id: string;
   scenario_id: string;
+  task_index: number;
   prompt: string;
   response: string;
   ts: string;
@@ -147,7 +152,7 @@ export async function saveEvents(events: StudyEvent[]): Promise<SaveResult> {
   }
 }
 
-/** Written once per scenario, before the participant sees the menu. */
+/** Written once per task, before the participant sees the menu. */
 export async function saveResponse(response: StudyResponse): Promise<SaveResult> {
   const store = readLocal();
   store.responses.push(response);

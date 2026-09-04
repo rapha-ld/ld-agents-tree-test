@@ -4,7 +4,7 @@ import type { StudyEvent, StudyResponse, StudySession } from '../session';
 export type ResultsFile = {
   sessions: StudySession[];
   events: StudyEvent[];
-  /** Absent in files exported before the per-scenario question existed. */
+  /** Absent in files exported before the label question existed. */
   responses?: StudyResponse[];
 };
 

@@ -36,12 +36,17 @@ create table if not exists responses (
   id          bigserial primary key,
   session_id  uuid        not null,
   scenario_id text        not null,
+  task_index  integer     not null default 0,
   prompt      text        not null,
   response    text        not null,
   ts          timestamptz not null
 );
 
-create index if not exists responses_session_idx on responses (session_id, scenario_id);
+-- Added when the label question moved from once per scenario to once per task.
+-- Existing rows predate per-task answers, so they keep the default of 0.
+alter table responses add column if not exists task_index integer not null default 0;
+
+create index if not exists responses_session_idx on responses (session_id, scenario_id, task_index);
 
 alter table sessions  enable row level security;
 alter table events    enable row level security;
