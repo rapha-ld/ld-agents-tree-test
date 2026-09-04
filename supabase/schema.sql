@@ -19,12 +19,19 @@ create table if not exists events (
   scenario_id    text        not null,
   task_index     int         not null,
   seq            int         not null,
-  kind           text        not null check (kind in ('start', 'click', 'back', 'submit', 'giveup', 'mode')),
+  kind           text        not null check (kind in ('start', 'click', 'back', 'submit', 'giveup', 'mode', 'stepback')),
   node_path      text        not null,
   destination_id text,
   depth          int         not null,
   ts             timestamptz not null
 );
+
+-- `create table if not exists` leaves an existing table's constraints alone, so
+-- a new event kind needs the check replaced explicitly. Dropping first makes
+-- this safe to re-run.
+alter table events drop constraint if exists events_kind_check;
+alter table events add constraint events_kind_check
+  check (kind in ('start', 'click', 'back', 'submit', 'giveup', 'mode', 'stepback'));
 
 create index if not exists events_session_idx on events (session_id, scenario_id, task_index, seq);
 
@@ -37,6 +44,7 @@ create table if not exists responses (
   session_id  uuid        not null,
   scenario_id text        not null,
   task_index  integer     not null default 0,
+  revision    integer     not null default 0,
   prompt      text        not null,
   response    text        not null,
   ts          timestamptz not null
@@ -45,6 +53,11 @@ create table if not exists responses (
 -- Added when the label question moved from once per scenario to once per task.
 -- Existing rows predate per-task answers, so they keep the default of 0.
 alter table responses add column if not exists task_index integer not null default 0;
+
+-- A participant can step back and change their answer. Each attempt is inserted
+-- rather than overwritten, so the revisions are visible; the highest revision
+-- for a task is the final answer.
+alter table responses add column if not exists revision integer not null default 0;
 
 create index if not exists responses_session_idx on responses (session_id, scenario_id, task_index);
 

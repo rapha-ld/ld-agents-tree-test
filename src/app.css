@@ -89,7 +89,10 @@ code { background: #f0f1f5; padding: 0.1em 0.35em; border-radius: 3px; font-size
 
 /* --- start over ------------------------------------------------------------ */
 
-.restart-bar { display: flex; justify-content: flex-end; margin: -0.75rem -0.75rem 0.5rem 0; }
+/* Back sits left, Start over right, so the one a participant reaches for often
+   is not next to the one that discards their run. */
+.restart-bar { display: flex; justify-content: space-between; margin: -0.75rem -0.75rem 0.5rem -0.75rem; }
+.restart-bar button:disabled { opacity: 0.35; cursor: default; }
 .small-btn { font-size: 0.85rem; padding: 0.25rem 0.5rem; }
 
 .restart-confirm {

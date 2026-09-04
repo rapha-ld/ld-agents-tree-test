@@ -32,12 +32,24 @@ export function Answers({
       scenario,
       task,
       taskIndex,
-      answers: responses
-        .filter((r) => r.scenario_id === scenario.id && (r.task_index ?? 0) === taskIndex)
+      answers: [
+        // A participant who stepped back and answered again left a row per
+        // attempt. The highest revision is their final answer; the earlier ones
+        // are kept so a changed answer is visible as a change.
+        ...responses
+          .filter((r) => r.scenario_id === scenario.id && (r.task_index ?? 0) === taskIndex)
+          .reduce((best, r) => {
+            const seen = best.get(r.session_id);
+            if (!seen || (r.revision ?? 0) > (seen.revision ?? 0)) best.set(r.session_id, r);
+            return best;
+          }, new Map<string, (typeof responses)[number]>())
+          .values(),
+      ]
         .map((r) => ({
           who: labelFor.get(r.session_id) ?? 'Anonymous',
           scheme: schemeFor.get(r.session_id) ?? null,
           text: r.response,
+          changed: (r.revision ?? 0) > 0,
         }))
         .sort((a, b) => a.who.localeCompare(b.who)),
     })),
@@ -45,6 +57,7 @@ export function Answers({
 
   const withAnswers = groups.filter((g) => g.answers.length > 0);
   const total = withAnswers.reduce((n, g) => n + g.answers.length, 0);
+  const changed = withAnswers.reduce((n, g) => n + g.answers.filter((a) => a.changed).length, 0);
 
   if (withAnswers.length === 0) {
     return (
@@ -59,6 +72,7 @@ export function Answers({
       <p className="muted small">
         {total} {total === 1 ? 'answer' : 'answers'} across {withAnswers.length} of {groups.length} tasks. The menu each
         person was on is shown beside their answer, so a word that only appears in one arm is visible as such.
+        {changed > 0 ? ` ${changed} ${changed === 1 ? 'was' : 'were'} changed after seeing the menu.` : ''}
       </p>
       <div className="answers">
         {withAnswers.map(({ key, scenario, task, taskIndex, answers }) => (
@@ -76,6 +90,7 @@ export function Answers({
                   <span className="answer-who">
                     {a.who}
                     {a.scheme ? <span className="muted small"> ({a.scheme})</span> : null}
+                    {a.changed ? <span className="muted small"> · changed</span> : null}
                   </span>
                   <span className="answer-text">{a.text}</span>
                 </li>
