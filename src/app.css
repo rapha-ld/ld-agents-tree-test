@@ -200,8 +200,10 @@ button.ghost:hover { color: var(--ink); }
 .modetab:hover { color: var(--ink); }
 .modetab.active { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
 
-.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem; margin-bottom: 0.75rem; font-size: 0.85rem; }
-.crumb { border: none; background: none; padding: 0.15rem 0.2rem; color: var(--accent); }
+/* Body size. At 0.85rem this was smaller than everything around it, which is
+   the wrong emphasis for the one thing telling a participant where they are. */
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem; margin-bottom: 0.75rem; font-size: 1rem; }
+.crumb { border: none; background: none; padding: 0.2rem 0.25rem; font-size: inherit; color: var(--accent); }
 .crumb:disabled { color: var(--muted); opacity: 1; }
 .sep { color: var(--muted); }
 
@@ -220,6 +222,13 @@ button.ghost:hover { color: var(--ink); }
 }
 .node:hover { background: #f5f6fa; }
 .chev { color: var(--muted); }
+
+/* Children sit inside their section rather than replacing the level, so the
+   indent and the rule are what carry the nesting. The left rule reads as one
+   continuous line down an open section. */
+.tree li.nested > .node { background: #fbfcfd; }
+.tree li.nested > .node > span:first-child { box-shadow: -0.55rem 0 0 -0.5rem var(--line); }
+.node.open { font-weight: 600; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
 
