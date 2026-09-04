@@ -133,3 +133,26 @@ describe('parseScenario', () => {
     expect(() => parseScenario('---\nid: a\npersona: p\n---\ntargets: x\n')).toThrow(/before any `##`/);
   });
 });
+
+
+describe('a task can override the label question', () => {
+  it('reads `question:` and leaves the others on the default', () => {
+    const scenario = parseScenario(
+      [
+        '---', 'id: s', 'persona: P', '---', 'Ctx.', '',
+        '## Plain task.', 'targets: a', '',
+        '## A situation that reads better with its own question.',
+        'question: Where do you go to review it?', 'targets: b',
+      ].join('\n'),
+      's.md',
+    );
+    expect(scenario.tasks[0].question).toBeUndefined();
+    expect(scenario.tasks[1].question).toBe('Where do you go to review it?');
+  });
+
+  it('rejects a `question:` line before any task', () => {
+    expect(() =>
+      parseScenario(['---', 'id: s', 'persona: P', '---', 'question: Too early?', '## T.', 'targets: a'].join('\n'), 's.md'),
+    ).toThrow(/question:/);
+  });
+});

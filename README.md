@@ -319,9 +319,15 @@ same reason.
 
 ### What each task asks first
 
-Every task runs in two steps. Step one shows the task and asks **"What would you call the
-section you would look in?"** as free text, and requires an answer. No menu is on screen.
-Step two shows the menu and they click through it.
+Every task runs in two steps. Step one shows the task and asks **"What navigation label
+would you look for?"** as free text, and requires an answer. No menu is on screen. Step two
+shows the menu and they click through it.
+
+A task can ask its own question instead, with a `question:` line beside `targets:`. Use it
+when a task reads better as a situation followed by a specific question: "A teammate made a
+change and is waiting on your sign-off" followed by "Where do you go to review it?" beats
+asking the generic question about it. The wording asked is stored with every answer either
+way.
 
 Asked per task rather than per scenario: a scenario covers several different jobs, and the
 word someone reaches for when turning a flag off is not the word they reach for when
