@@ -615,12 +615,19 @@ export function Study() {
             <li key={`${node.label}-${depth}-${i}`} className={depth > 0 ? 'nested' : undefined}>
               <button
                 className={open ? 'node open' : 'node'}
-                style={depth > 0 ? { paddingLeft: `${0.9 + depth * 1.1}rem` } : undefined}
+                style={depth > 0 ? { paddingLeft: `${0.9 + depth * 2}rem` } : undefined}
                 aria-expanded={node.children.length > 0 ? open : undefined}
                 onClick={() => choose(node, depth)}
               >
                 <span>{node.label}</span>
-                {node.children.length > 0 ? <span className="chev">{open ? '\u2304' : '\u203a'}</span> : null}
+                {/* One glyph, rotated when open. Two different characters
+                    render at different weights and sizes across platforms, and
+                    U+2304 in particular is missing from some fonts. */}
+                {node.children.length > 0 ? (
+                  <span className="chev" aria-hidden="true">
+                    &rsaquo;
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}
