@@ -53,8 +53,8 @@ export type SchemeOutcome = {
   attempts: number;
   successRate: number | null;
   /**
-   * Successes reached without a wasted move: no backtrack, and no section
-   * opened that was not an ancestor of the answer.
+   * Successes reached in one move: their first pick was the answer, and they
+   * did not close or reopen a section on the way to it.
    */
   directnessRate: number | null;
   /**
@@ -200,20 +200,26 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
       for (const a of [acc, schemeAcc]) a.giveups += 1;
     } else if (terminal.destination_id && accepted.has(terminal.destination_id)) {
       for (const a of [acc, schemeAcc]) a.successes += 1;
-      // Direct means no wasted moves, which takes two checks rather than one.
+      // Direct means they picked the answer and did not change their mind.
       //
-      // Absence of `back` is not enough on its own. The menu expands in place,
-      // so opening a section and then opening a different one replaces the path
-      // without recording a backtrack. Someone who opened five sections before
-      // choosing would otherwise score as direct.
+      // Counting opens does not work now that every section starts expanded:
+      // there is nothing to open on the way to an answer, so almost every run
+      // would score as direct. Nor does absence of `back`, which now means only
+      // that they did not collapse a section to reduce clutter, and tidying the
+      // list is not the same as being lost.
       //
-      // The second check is that they opened exactly the ancestors of the answer
-      // and nothing else: a leaf submitted at depth N sits under N-1 sections,
-      // so N-1 clicks is the direct path and anything more is exploration.
-      const backtracked = ordered.some((e) => e.kind === 'back');
-      const opens = ordered.filter((e) => e.kind === 'click').length;
-      const wandered = opens > Math.max(0, terminal.depth - 1);
-      if (!backtracked && !wandered) for (const a of [acc, schemeAcc]) a.direct += 1;
+      // What is left, and what the question was always really asking, is
+      // whether their first pick was the right one. A click carrying a
+      // destination id is a pick; one carrying none is a section opening or
+      // closing. No section in any scheme is bound to a destination and also
+      // has children, and a test holds that, so the two cannot be confused.
+      const picks = ordered.filter((e) => e.kind === 'click' && e.destination_id !== null).length;
+      // Every section starts open, so touching one at all means they closed it
+      // or reopened it, which is fiddling rather than the path to an answer.
+      const fiddled = ordered.some(
+        (e) => e.kind === 'back' || (e.kind === 'click' && e.destination_id === null),
+      );
+      if (picks <= 1 && !fiddled) for (const a of [acc, schemeAcc]) a.direct += 1;
     }
 
     const firstNav = ordered.find((e) => e.kind === 'click' || e.kind === 'mode');

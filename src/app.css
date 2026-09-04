@@ -9,6 +9,7 @@
   --bg: #fbfbfd;
   --panel: #ffffff;
   --accent: #405bff;
+  --accent-bg: #eef1ff;
   --best: #e8f5ec;
   --best-ink: #1a6b3c;
   --warn: #a4331f;
@@ -251,6 +252,13 @@ button.ghost:hover { color: var(--ink); }
 /* Rotating one glyph rather than swapping two: the direction change is the
    state, and it cannot go out of sync with the open flag. */
 .node.open .chev { transform: rotate(90deg); color: var(--accent); }
+
+/* A pick is held rather than acted on, so the row has to say so until Submit.
+   Colour alone would not: the tick is the part that reads as "this one". */
+.tick { font-size: 1.05rem; font-weight: 700; line-height: 1; width: 1rem; text-align: center; color: var(--accent); }
+.node.picked { background: var(--accent-bg); box-shadow: inset 3px 0 0 var(--accent); }
+.node.picked > span:first-child { font-weight: 600; color: var(--accent); }
+.node.picked:hover { background: var(--accent-bg); }
 
 /* Children sit inside their section rather than replacing the level, so the
    indent and the rule are what carry the nesting. The left rule reads as one

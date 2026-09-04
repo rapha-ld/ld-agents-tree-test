@@ -31,6 +31,30 @@ function questionFor(task: { question?: string } | undefined): string {
 }
 
 /**
+ * Every section, open. Sections start expanded so the whole menu is readable
+ * without opening anything: a participant judging whether a label is the right
+ * one can see what is under all of them at once, which is the comparison the
+ * study is actually asking them to make. Closing is theirs to do if the list
+ * gets long.
+ */
+function allOpenPaths(scheme: Scheme, modeId: string | null): Set<string> {
+  const out = new Set<string>();
+  const walk = (nodes: SchemeNode[], prefix: string[]) => {
+    for (const node of nodes) {
+      const path = [...prefix, node.label];
+      if (node.children.length > 0) {
+        out.add(path.join('/'));
+        walk(visibleChildren(node, modeId), path);
+      }
+    }
+  };
+  walk(sectionsForMode(scheme, modeId), []);
+  return out;
+}
+
+const pathKey = (path: SchemeNode[]) => path.map((n) => n.label).join('/');
+
+/**
  * Scenarios run in the order they are authored, which `src/data.ts` takes from
  * the filenames. They were shuffled per participant to spread order effects
  * across the sample; they are not any more, because the scenarios tell a
@@ -98,7 +122,13 @@ export function Study() {
   const [phase, setPhase] = useState<Phase>('intro');
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [taskIndex, setTaskIndex] = useState(0);
-  const [trail, setTrail] = useState<SchemeNode[]>([]);
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  /**
+   * What they have picked but not yet confirmed. Choosing a page no longer ends
+   * the task: it marks the row and enables Submit, so changing their mind costs
+   * a click rather than being impossible.
+   */
+  const [selected, setSelected] = useState<{ node: SchemeNode; path: SchemeNode[] } | null>(null);
   const [label, setLabel] = useState('');
   const [guess, setGuess] = useState('');
   const [confirmRestart, setConfirmRestart] = useState(false);
@@ -124,7 +154,7 @@ export function Study() {
     ) => {
       const scenarioId = at?.scenarioId ?? scenario?.id;
       if (!scenarioId) return;
-      const path = at?.trail ?? trail;
+      const path = at?.trail ?? [];
       seq.current += 1;
       pending.current.push({
         session_id: sessionId.current,
@@ -138,7 +168,7 @@ export function Study() {
         ts: new Date().toISOString(),
       });
     },
-    [scenario, taskIndex, trail],
+    [scenario, taskIndex],
   );
 
   /**
@@ -206,6 +236,8 @@ export function Study() {
     const resolved = assignment.scheme;
     setScheme(resolved);
     setMode(defaultMode(resolved));
+    setOpen(allOpenPaths(resolved, defaultMode(resolved)));
+    setSelected(null);
     sessionStart.current = Date.now();
     taskStart.current = Date.now();
     noteSave(await saveSession(session(resolved.id, false)));
@@ -227,7 +259,8 @@ export function Study() {
     setMode(null);
     setScenarioIndex(0);
     setTaskIndex(0);
-    setTrail([]);
+    setOpen(new Set());
+    setSelected(null);
     setGuess('');
     revision.current = 0;
     setPhase('intro');
@@ -254,7 +287,8 @@ export function Study() {
     // Kept rather than cleared, so stepping back shows what they wrote and can
     // be edited. Cleared when the next task begins.
     taskStart.current = Date.now();
-    setTrail([]);
+    if (scheme) setOpen(allOpenPaths(scheme, mode));
+    setSelected(null);
     record('start');
     setPhase('task');
   };
@@ -269,7 +303,7 @@ export function Study() {
         // The next task asks what they expect before showing the menu again, so
         // the 'start' event is recorded there rather than here.
         setTaskIndex(taskIndex + 1);
-        setTrail([]);
+        setSelected(null);
         seq.current = 0;
         setGuess('');
         revision.current = 0;
@@ -285,7 +319,7 @@ export function Study() {
       }
       setScenarioIndex((i) => i + 1);
       setTaskIndex(0);
-      setTrail([]);
+      setSelected(null);
       seq.current = 0;
       setGuess('');
       revision.current = 0;
@@ -294,20 +328,33 @@ export function Study() {
     [flush, noteSave, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
   );
 
-  const choose = (node: SchemeNode, depth: number) => {
-    if (node.children.length > 0) {
-      // Clicking an open section closes it; clicking a sibling of an open one
-      // replaces the path from that depth down.
-      if (trail[depth]?.label === node.label) {
-        record('back');
-        setTrail((t) => t.slice(0, depth));
-        return;
-      }
-      record('click', node, { trail: trail.slice(0, depth) });
-      setTrail((t) => [...t.slice(0, depth), node]);
+  /** Sections open and close. Opening records a click, closing records a back. */
+  const toggle = (node: SchemeNode, path: SchemeNode[]) => {
+    const key = pathKey(path);
+    const parents = path.slice(0, -1);
+    if (open.has(key)) {
+      record('back', node, { trail: parents });
+      setOpen((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
       return;
     }
-    void advance('submit', node, trail.slice(0, depth));
+    record('click', node, { trail: parents });
+    setOpen((prev) => new Set(prev).add(key));
+  };
+
+  /**
+   * Pick a page. Recorded as a click, and a click carrying a destination id is
+   * unambiguously a page rather than a section, because no section in any scheme
+   * is bound to a destination and also has children. A test holds that true, so
+   * this stays readable in the results without a new event kind, and without
+   * another schema change on a live study.
+   */
+  const pick = (node: SchemeNode, path: SchemeNode[]) => {
+    record('click', node, { trail: path.slice(0, -1) });
+    setSelected({ node, path });
   };
 
   const switchMode = (next: string) => {
@@ -315,7 +362,10 @@ export function Study() {
     const label = scheme?.modes?.find((m) => m.id === next)?.label ?? next;
     record('mode', undefined, { trail: [], nodePath: label });
     setMode(next);
-    setTrail([]);
+    // Different sections are on screen, so the open set and any pick made
+    // against the old mode no longer mean anything.
+    if (scheme) setOpen(allOpenPaths(scheme, next));
+    setSelected(null);
   };
 
   /**
@@ -333,7 +383,7 @@ export function Study() {
     if (phase === 'task') {
       record('stepback', undefined, { nodePath: 'task' });
       revision.current += 1;
-      setTrail([]);
+      setSelected(null);
       setPhase('expect');
       return;
     }
@@ -558,25 +608,22 @@ export function Study() {
 
   if (phase === 'task' && task) {
     /**
-     * The whole menu, expanded down the path they have opened. The top level
-     * stays on screen and children appear nested underneath their section,
-     * rather than the level being replaced on each click. A participant can see
-     * where a section sits relative to the others while they read what is inside
-     * it, which is most of what "is this the right section" depends on.
-     *
-     * One path is open at a time. Opening another section closes the first,
-     * which keeps the list short enough to scan and keeps `trail` a single path,
-     * so the recorded depth and node_path still describe where they were.
+     * The whole menu, every section open unless they closed it. Children sit
+     * nested under their section rather than replacing the level, so where a
+     * page sits relative to the others is visible while they read it.
      */
-    const rows: { node: SchemeNode; depth: number; open: boolean }[] = [];
-    const walk = (nodes: SchemeNode[], depth: number) => {
+    const rows: { node: SchemeNode; path: SchemeNode[]; depth: number; isOpen: boolean }[] = [];
+    const walk = (nodes: SchemeNode[], parents: SchemeNode[]) => {
       for (const node of nodes) {
-        const open = trail[depth]?.label === node.label;
-        rows.push({ node, depth, open });
-        if (open) walk(visibleChildren(node, mode), depth + 1);
+        const path = [...parents, node];
+        const isOpen = open.has(pathKey(path));
+        rows.push({ node, path, depth: parents.length, isOpen });
+        if (isOpen) walk(visibleChildren(node, mode), path);
       }
     };
-    walk(sectionsForMode(scheme, mode), 0);
+    walk(sectionsForMode(scheme, mode), []);
+
+    const selectedKey = selected ? pathKey(selected.path) : null;
 
     return (
       <>
@@ -603,71 +650,44 @@ export function Study() {
           </div>
         ) : null}
 
-        <nav className="crumbs" aria-label="Where you are">
-          <button
-            className="crumb"
-            onClick={() => {
-              record('back');
-              setTrail([]);
-            }}
-            disabled={trail.length === 0}
-          >
-            Top level
-          </button>
-          {trail.map((node, i) => (
-            <span key={`${node.label}-${i}`}>
-              <span className="sep">/</span>
-              <button
-                className="crumb"
-                onClick={() => {
-                  record('back');
-                  setTrail((t) => t.slice(0, i + 1));
-                }}
-              >
-                {node.label}
-              </button>
-            </span>
-          ))}
-        </nav>
-
         <ul className="tree">
-          {rows.map(({ node, depth, open }, i) => (
-            <li key={`${node.label}-${depth}-${i}`} className={depth > 0 ? 'nested' : undefined}>
-              <button
-                className={open ? 'node open' : 'node'}
-                style={depth > 0 ? { paddingLeft: `${0.9 + depth * 2}rem` } : undefined}
-                aria-expanded={node.children.length > 0 ? open : undefined}
-                onClick={() => choose(node, depth)}
-              >
-                <span>{node.label}</span>
-                {/* One glyph, rotated when open. Two different characters
-                    render at different weights and sizes across platforms, and
-                    U+2304 in particular is missing from some fonts. */}
-                {node.children.length > 0 ? (
-                  <span className="chev" aria-hidden="true">
-                    &rsaquo;
-                  </span>
-                ) : null}
-              </button>
-            </li>
-          ))}
+          {rows.map(({ node, path, depth, isOpen }) => {
+            const key = pathKey(path);
+            const isSection = node.children.length > 0;
+            const isPicked = key === selectedKey;
+            return (
+              <li key={key} className={depth > 0 ? 'nested' : undefined}>
+                <button
+                  className={`node${isOpen ? ' open' : ''}${isPicked ? ' picked' : ''}`}
+                  style={depth > 0 ? { paddingLeft: `${0.9 + depth * 2}rem` } : undefined}
+                  aria-expanded={isSection ? isOpen : undefined}
+                  aria-pressed={isSection ? undefined : isPicked}
+                  onClick={() => (isSection ? toggle(node, path) : pick(node, path))}
+                >
+                  <span>{node.label}</span>
+                  {isSection ? (
+                    <span className="chev" aria-hidden="true">
+                      &rsaquo;
+                    </span>
+                  ) : isPicked ? (
+                    <span className="tick" aria-hidden="true">
+                      &#10003;
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="actions">
-          {trail.length > 0 ? (
-            // No "up one level": the whole menu is on screen, so closing a
-            // section is clicking its own row and moving elsewhere is clicking
-            // that row. A button for it would be a third way to do the same
-            // thing.
-            <button
-              className="primary"
-              // The current node is already the last trail entry, so the path
-              // passed here excludes it to avoid recording it twice.
-              onClick={() => void advance('submit', trail[trail.length - 1], trail.slice(0, -1))}
-            >
-              I would look here
-            </button>
-          ) : null}
+          <button
+            className="primary"
+            disabled={selected === null}
+            onClick={() => selected && void advance('submit', selected.node, selected.path.slice(0, -1))}
+          >
+            Submit
+          </button>
           <button className="ghost" onClick={() => void advance('giveup')}>
             I would not know where to look
           </button>

@@ -348,9 +348,18 @@ Other behaviour:
   directly comparable.
 - Labels only. No content, no correctness feedback, and an explicit
   "I would not know where to look" on every task.
-- The whole menu is on screen. Opening a section nests its children underneath
-  it rather than replacing the level, so the top level stays visible while
-  someone reads what is inside. One path is open at a time.
+- The whole menu is on screen, every section open. Children sit nested under
+  their section rather than replacing the level, so where a page sits relative
+  to the others is visible while someone reads it. Closing a section is theirs
+  to do if the list gets long.
+- Picking a page marks the row and enables Submit rather than ending the task,
+  so changing their mind costs a click. "I would not know where to look" is
+  always available.
+- Recorded per task: every pick and every section opened or closed, each with
+  its full path, so the section a page was picked from is in the data and not
+  just the page. A click carrying a destination id is a pick; one carrying none
+  is a section. No section in any scheme is bound to a destination and also has
+  children, and a test holds that, so the two cannot be confused.
 
 Recorded per task: every click with its path and depth, backtracks, time to first
 click, the final answer, and abandonment. Success is derived at analysis time from
