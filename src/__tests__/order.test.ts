@@ -17,6 +17,15 @@ describe('scenario order', () => {
   it('has the task counts from the doc', () => {
     expect(loaded.map((s) => s.tasks.length)).toEqual([3, 3, 3, 1, 2]);
   });
+  it('punctuates every task prompt', () => {
+    // A content review caught eight prompts running on without a full stop.
+    // Questions keep their question mark; everything else ends in a period.
+    for (const scenario of loaded) {
+      for (const task of scenario.tasks) {
+        expect(task.prompt, task.prompt).toMatch(/[.?!]$/);
+      }
+    }
+  });
   it('opens each scenario on the doc-order first task', () => {
     expect(loaded.map((s) => s.tasks[0].targets[0])).toEqual([
       'flags', 'flags', 'ai-monitoring', 'live', 'agentrouter.usage',
