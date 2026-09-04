@@ -347,23 +347,18 @@ export function Study() {
    * bar creeping across the whole run tells a participant almost nothing, and
    * "task 2 of 3" is something they can actually act on.
    */
+  /**
+   * Task position inside the current scenario. The numbers themselves now sit
+   * next to what they count, on the scenario panel and above the task, so this
+   * is the bar alone rather than a second copy of both.
+   */
   const scenarioProgress = (
     <div className="progress-block">
-      <p className="progress-meta">
-        <span>
-          Scenario {scenarioIndex + 1} of {scenarios.length}
-        </span>
-        <span>
-          Task {taskIndex + 1} of {scenarioTasks}
-        </span>
-      </p>
       <div
         className="segments"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={scenarioTasks}
-        // Matches the filled segment count and the visible "Task 1 of 3", so the
-        // announced value and the drawn one cannot disagree.
         aria-valuenow={taskIndex + 1}
         aria-label={`Task ${taskIndex + 1} of ${scenarioTasks} in this scenario`}
       >
@@ -380,12 +375,32 @@ export function Study() {
    * and a participant who leaves and comes back would otherwise never see the
    * context again.
    */
+  /**
+   * The part that does not change while a scenario runs. Participants could not
+   * tell the situation was holding still while the task moved on, so it is
+   * labelled, recessed, and carries the same "same situation" note on every task
+   * after the first.
+   */
   const scenarioContext = scenario ? (
-    <section className="scenario-context" aria-label="Scenario">
+    <section className="scenario-context" aria-label={`Scenario ${scenarioIndex + 1}`}>
+      <p className="ctx-label">
+        Scenario {scenarioIndex + 1} of {scenarios.length}
+        {taskIndex > 0 ? <span className="ctx-still"> &middot; same situation as the last task</span> : null}
+      </p>
       {contextParagraphs(scenario).map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>
       ))}
     </section>
+  ) : null;
+
+  /** The part that changes. Labelled and weighted to read as the foreground. */
+  const taskHeading = task ? (
+    <div className="task-block">
+      <p className="task-label">
+        Task {taskIndex + 1} of {scenarioTasks}
+      </p>
+      <h2 className="prompt">{task.prompt}</h2>
+    </div>
   ) : null;
 
   const saveNotice = saveIssue ? (
@@ -472,7 +487,7 @@ export function Study() {
       <>
         <div className="card">
         {restartBar}
-        <p className="muted small">
+        <p className="ctx-label standalone">
           Scenario {scenarioIndex + 1} of {scenarios.length}
         </p>
         {contextParagraphs(scenario).map((paragraph) => (
@@ -507,7 +522,7 @@ export function Study() {
         {restartBar}
         {scenarioProgress}
         {scenarioContext}
-        <h2 className="prompt">{task.prompt}</h2>
+        {taskHeading}
 
         <label className="field">
           {LABEL_PROMPT}
@@ -564,7 +579,7 @@ export function Study() {
         {restartBar}
         {scenarioProgress}
         {scenarioContext}
-        <h2 className="prompt">{task.prompt}</h2>
+        {taskHeading}
         <p className="muted small">Select the page you&rsquo;d try first. Explain your choice.</p>
 
         {scheme.modes ? (

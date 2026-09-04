@@ -141,18 +141,22 @@ button.primary:hover { filter: brightness(1.08); }
 button.ghost { border-color: transparent; color: var(--muted); }
 button.ghost:hover { color: var(--ink); }
 
-.prompt { margin: 0.25rem 0 1.25rem; }
+/* The task is the foreground: it is what changes between screens while the
+   scenario holds still, so it carries the weight and the accent label. */
+.task-block { margin: 0 0 1.25rem; }
+.task-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.prompt { margin: 0; font-size: 1.35rem; line-height: 1.35; }
 
 /* One segment per task in the current scenario, so the remaining work is
    countable rather than a fraction of a bar. */
 .progress-block { margin-bottom: 1.25rem; }
-.progress-meta {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 0 0.4rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
 .segments { display: flex; gap: 4px; }
 .segment {
   flex: 1;
@@ -168,15 +172,24 @@ button.ghost:hover { color: var(--ink); }
 .scenario-context {
   background: var(--bg);
   border: 1px solid var(--line);
+  border-left: 3px solid #cbd1da;
   border-radius: 8px;
-  padding: 0.75rem 0.9rem;
-  margin-bottom: 1.25rem;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem;
 }
-.scenario-context h3 {
-  margin: 0 0 0.3rem;
-  font-size: 0.9rem;
-  font-weight: 600;
+/* Recessed on purpose. Participants read the situation once and then need to
+   notice it is still the same one three tasks later, which is a different job
+   from reading it the first time. */
+.ctx-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
+.ctx-still { font-weight: 500; letter-spacing: 0.02em; text-transform: none; opacity: 0.85; }
+.ctx-label.standalone { color: var(--muted); margin-bottom: 0.6rem; }
 .scenario-context p {
   margin: 0.3rem 0 0;
   font-size: 0.9rem;

@@ -5,14 +5,13 @@ persona: New engineer joining a company that already uses LaunchDarkly
 ---
 
 You started at your company this week. Your team already has LaunchDarkly set up,
-and your first ticket is to ship a change behind a feature flag and find out
-whether the change actually helps.
+and your first ticket is to ship a change behind a feature flag.
 
 ## Where would you go to create your first flag?
 targets: flags
 accept: flags.new
 
-## Create an A/B test on the flag.
+## Create an A/B test.
 targets: experiments
 accept: experiments.new, flag.experiments
 
