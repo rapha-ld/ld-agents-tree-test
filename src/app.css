@@ -145,11 +145,9 @@ button.ghost:hover { color: var(--ink); }
    scenario holds still, so it carries the weight and the accent label. */
 .task-block { margin: 0 0 1.25rem; }
 .task-label {
-  margin: 0 0 0.2rem;
-  font-size: 0.7rem;
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--accent);
 }
 .prompt { margin: 0; font-size: 1.35rem; line-height: 1.35; }
@@ -182,13 +180,11 @@ button.ghost:hover { color: var(--ink); }
    from reading it the first time. */
 .ctx-label {
   margin: 0 0 0.35rem;
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--muted);
 }
-.ctx-still { font-weight: 500; letter-spacing: 0.02em; text-transform: none; opacity: 0.85; }
+.ctx-still { font-weight: 500; opacity: 0.85; }
 .ctx-label.standalone { color: var(--muted); margin-bottom: 0.6rem; }
 .scenario-context p {
   margin: 0.3rem 0 0;
