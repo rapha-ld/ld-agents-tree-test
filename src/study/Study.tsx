@@ -463,28 +463,24 @@ export function Study() {
 
         <label className="field">
           {LABEL_PROMPT}
-          <textarea
+          <input
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
-            rows={2}
             autoFocus
             onKeyDown={(e) => {
               // Enter submits, so the answer can be given without reaching for
-              // the mouse. Shift+Enter still makes a new line.
-              if (e.key === 'Enter' && !e.shiftKey) {
+              // the mouse. A section name is a few words, so one line is the
+              // right shape for it.
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 void submitExpectation();
               }
             }}
           />
-          <span className="hint">
-            In your own words, before you see the menu. There is no right answer, and a guess is more useful than a
-            blank.
-          </span>
         </label>
 
         <button className="primary" onClick={() => void submitExpectation()} disabled={guess.trim() === ''}>
-          Show me the menu
+          Submit
         </button>
         </div>
         {saveNotice}
