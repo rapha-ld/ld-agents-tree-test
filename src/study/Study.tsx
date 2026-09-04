@@ -70,10 +70,23 @@ function contextParagraphs(scenario: Scenario): string[] {
 
 type Phase = 'intro' | 'scenario' | 'expect' | 'task' | 'done';
 
+/**
+ * How many scenarios and how many tasks each carries, read from the loaded
+ * files. Hard-coding these in the intro invites a contradiction with the
+ * "Scenario 1 of 4" counter the moment a scenario is added or removed.
+ */
+function shape(all: Scenario[]): { scenarios: number; tasks: string } {
+  const counts = all.map((s) => s.tasks.length);
+  const low = Math.min(...counts);
+  const high = Math.max(...counts);
+  return { scenarios: all.length, tasks: low === high ? `${low}` : `${low} to ${high}` };
+}
+
 export function Study() {
   // Fixed for the whole visit: the link decides the menu, so re-reading it per
   // run cannot hand the same person a different menu on a second attempt.
   const [assignment] = useState(requestedScheme);
+  const [studyShape] = useState(() => shape(scenarios));
   const [scheme, setScheme] = useState<Scheme | null>(null);
   const [order, setOrder] = useState<Scenario[]>(() => shuffled(scenarios));
   const [phase, setPhase] = useState<Phase>('intro');
@@ -418,8 +431,9 @@ export function Study() {
         <div className="card">
         <h1>Navigation study</h1>
         <p>
-          You will be given a series of short tasks. For each one, click through the menu to where you would expect to
-          find the answer.
+          You will be given {studyShape.scenarios} scenarios, each with {studyShape.tasks} tasks. Every task has two
+          steps. First you tell us, in your own words, what you would call the section you would look in, before any
+          menu is on screen. Then the menu appears and you click through it to where you would go to do the task.
         </p>
         <p>
           Click through until you reach the place you would look. If you have no idea, click "I would not know where to look." Guessing
