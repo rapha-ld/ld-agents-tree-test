@@ -295,3 +295,52 @@ describe('analyze', () => {
     });
   });
 });
+
+describe('directness with a menu that expands in place', () => {
+  const scheme = parseScheme(
+    `---\nid: m\nname: M\n---\n# Alpha\n- One -> one\n# Beta\n- Two -> two\n`,
+    'm.md',
+  );
+  const scenario = parseScenario(`---\nid: s\npersona: P\n---\nCtx.\n\n## Find two.\ntargets: two\n`, 's.md');
+  const session = {
+    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    participant_label: 'p',
+    scheme_id: 'm',
+    started_at: '2026-01-01T00:00:00Z',
+    finished_at: '2026-01-01T00:01:00Z',
+    user_agent: 'test',
+  };
+  const ev = (seq: number, kind: string, node_path: string, depth: number, destination_id: string | null = null) => ({
+    session_id: session.id,
+    scenario_id: 's',
+    task_index: 0,
+    seq,
+    kind: kind as never,
+    node_path,
+    destination_id,
+    depth,
+    ts: '2026-01-01T00:00:0' + seq + 'Z',
+  });
+
+  it('counts a straight path as direct', () => {
+    const [outcome] = analyze({ sessions: [session], events: [
+      ev(1, 'start', '', 0),
+      ev(2, 'click', 'Beta', 1),
+      ev(3, 'submit', 'Beta / Two', 2, 'two'),
+    ] }, [scheme], [scenario]);
+    expect(outcome.directnessRate).toBe(1);
+  });
+
+  it('does not count opening the wrong section first, even with no backtrack', () => {
+    // Opening Alpha then Beta replaces the path without a `back` event, which
+    // is why absence of `back` cannot carry this on its own.
+    const [outcome] = analyze({ sessions: [session], events: [
+      ev(1, 'start', '', 0),
+      ev(2, 'click', 'Alpha', 1),
+      ev(3, 'click', 'Beta', 1),
+      ev(4, 'submit', 'Beta / Two', 2, 'two'),
+    ] }, [scheme], [scenario]);
+    expect(outcome.successRate).toBe(1);
+    expect(outcome.directnessRate).toBe(0);
+  });
+});

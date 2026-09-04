@@ -342,6 +342,9 @@ Other behaviour:
   directly comparable.
 - Labels only. No content, no correctness feedback, and an explicit
   "I would not know where to look" on every task.
+- The whole menu is on screen. Opening a section nests its children underneath
+  it rather than replacing the level, so the top level stays visible while
+  someone reads what is inside. One path is open at a time.
 
 Recorded per task: every click with its path and depth, backtracks, time to first
 click, the final answer, and abandonment. Success is derived at analysis time from

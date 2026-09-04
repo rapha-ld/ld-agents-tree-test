@@ -289,13 +289,20 @@ export function Study() {
     [flush, noteSave, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
   );
 
-  const choose = (node: SchemeNode) => {
+  const choose = (node: SchemeNode, depth: number) => {
     if (node.children.length > 0) {
-      record('click', node);
-      setTrail((t) => [...t, node]);
+      // Clicking an open section closes it; clicking a sibling of an open one
+      // replaces the path from that depth down.
+      if (trail[depth]?.label === node.label) {
+        record('back');
+        setTrail((t) => t.slice(0, depth));
+        return;
+      }
+      record('click', node, { trail: trail.slice(0, depth) });
+      setTrail((t) => [...t.slice(0, depth), node]);
       return;
     }
-    void advance('submit', node);
+    void advance('submit', node, trail.slice(0, depth));
   };
 
   const switchMode = (next: string) => {
@@ -304,11 +311,6 @@ export function Study() {
     record('mode', undefined, { trail: [], nodePath: label });
     setMode(next);
     setTrail([]);
-  };
-
-  const goBack = () => {
-    record('back');
-    setTrail((t) => t.slice(0, -1));
   };
 
   /**
@@ -535,8 +537,27 @@ export function Study() {
   }
 
   if (phase === 'task' && task) {
-    const level =
-      trail.length === 0 ? sectionsForMode(scheme, mode) : visibleChildren(trail[trail.length - 1], mode);
+    /**
+     * The whole menu, expanded down the path they have opened. The top level
+     * stays on screen and children appear nested underneath their section,
+     * rather than the level being replaced on each click. A participant can see
+     * where a section sits relative to the others while they read what is inside
+     * it, which is most of what "is this the right section" depends on.
+     *
+     * One path is open at a time. Opening another section closes the first,
+     * which keeps the list short enough to scan and keeps `trail` a single path,
+     * so the recorded depth and node_path still describe where they were.
+     */
+    const rows: { node: SchemeNode; depth: number; open: boolean }[] = [];
+    const walk = (nodes: SchemeNode[], depth: number) => {
+      for (const node of nodes) {
+        const open = trail[depth]?.label === node.label;
+        rows.push({ node, depth, open });
+        if (open) walk(visibleChildren(node, mode), depth + 1);
+      }
+    };
+    walk(sectionsForMode(scheme, mode), 0);
+
     return (
       <>
         <div className="study">
@@ -590,11 +611,23 @@ export function Study() {
         </nav>
 
         <ul className="tree">
-          {level.map((node, i) => (
-            <li key={`${node.label}-${i}`}>
-              <button className="node" onClick={() => choose(node)}>
+          {rows.map(({ node, depth, open }, i) => (
+            <li key={`${node.label}-${depth}-${i}`} className={depth > 0 ? 'nested' : undefined}>
+              <button
+                className={open ? 'node open' : 'node'}
+                style={depth > 0 ? { paddingLeft: `${0.9 + depth * 2}rem` } : undefined}
+                aria-expanded={node.children.length > 0 ? open : undefined}
+                onClick={() => choose(node, depth)}
+              >
                 <span>{node.label}</span>
-                {node.children.length > 0 ? <span className="chev">&rsaquo;</span> : null}
+                {/* One glyph, rotated when open. Two different characters
+                    render at different weights and sizes across platforms, and
+                    U+2304 in particular is missing from some fonts. */}
+                {node.children.length > 0 ? (
+                  <span className="chev" aria-hidden="true">
+                    &rsaquo;
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}
@@ -602,17 +635,18 @@ export function Study() {
 
         <div className="actions">
           {trail.length > 0 ? (
-            <>
-              <button onClick={goBack}>Up one level</button>
-              <button
-                className="primary"
-                // The current node is already the last trail entry, so the path
-                // passed here excludes it to avoid recording it twice.
-                onClick={() => void advance('submit', trail[trail.length - 1], trail.slice(0, -1))}
-              >
-                I would look here
-              </button>
-            </>
+            // No "up one level": the whole menu is on screen, so closing a
+            // section is clicking its own row and moving elsewhere is clicking
+            // that row. A button for it would be a third way to do the same
+            // thing.
+            <button
+              className="primary"
+              // The current node is already the last trail entry, so the path
+              // passed here excludes it to avoid recording it twice.
+              onClick={() => void advance('submit', trail[trail.length - 1], trail.slice(0, -1))}
+            >
+              I would look here
+            </button>
           ) : null}
           <button className="ghost" onClick={() => void advance('giveup')}>
             I would not know where to look

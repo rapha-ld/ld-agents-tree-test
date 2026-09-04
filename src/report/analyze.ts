@@ -52,6 +52,10 @@ export type SchemeOutcome = {
   sessions: number;
   attempts: number;
   successRate: number | null;
+  /**
+   * Successes reached without a wasted move: no backtrack, and no section
+   * opened that was not an ancestor of the answer.
+   */
   directnessRate: number | null;
   /**
    * Among attempts whose first move could be evaluated, how many were heading
@@ -196,8 +200,20 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
       for (const a of [acc, schemeAcc]) a.giveups += 1;
     } else if (terminal.destination_id && accepted.has(terminal.destination_id)) {
       for (const a of [acc, schemeAcc]) a.successes += 1;
+      // Direct means no wasted moves, which takes two checks rather than one.
+      //
+      // Absence of `back` is not enough on its own. The menu expands in place,
+      // so opening a section and then opening a different one replaces the path
+      // without recording a backtrack. Someone who opened five sections before
+      // choosing would otherwise score as direct.
+      //
+      // The second check is that they opened exactly the ancestors of the answer
+      // and nothing else: a leaf submitted at depth N sits under N-1 sections,
+      // so N-1 clicks is the direct path and anything more is exploration.
       const backtracked = ordered.some((e) => e.kind === 'back');
-      if (!backtracked) for (const a of [acc, schemeAcc]) a.direct += 1;
+      const opens = ordered.filter((e) => e.kind === 'click').length;
+      const wandered = opens > Math.max(0, terminal.depth - 1);
+      if (!backtracked && !wandered) for (const a of [acc, schemeAcc]) a.direct += 1;
     }
 
     const firstNav = ordered.find((e) => e.kind === 'click' || e.kind === 'mode');
