@@ -23,7 +23,7 @@ import {
  * and the word someone reaches for when turning a flag off is not the word they
  * reach for when checking whether it worked.
  */
-export const LABEL_PROMPT = 'What would you call the section you would look in?';
+export const LABEL_PROMPT = 'What navigation label would you look for?';
 
 /** Fisher-Yates. Scenario order varies per participant. */
 function shuffled<T>(items: T[]): T[] {
@@ -70,10 +70,23 @@ function contextParagraphs(scenario: Scenario): string[] {
 
 type Phase = 'intro' | 'scenario' | 'expect' | 'task' | 'done';
 
+/**
+ * How many scenarios and how many tasks each carries, read from the loaded
+ * files. Hard-coding these in the intro invites a contradiction with the
+ * "Scenario 1 of 4" counter the moment a scenario is added or removed.
+ */
+function shape(all: Scenario[]): { scenarios: number; tasks: string } {
+  const counts = all.map((s) => s.tasks.length);
+  const low = Math.min(...counts);
+  const high = Math.max(...counts);
+  return { scenarios: all.length, tasks: low === high ? `${low}` : `${low} to ${high}` };
+}
+
 export function Study() {
   // Fixed for the whole visit: the link decides the menu, so re-reading it per
   // run cannot hand the same person a different menu on a second attempt.
   const [assignment] = useState(requestedScheme);
+  const [studyShape] = useState(() => shape(scenarios));
   const [scheme, setScheme] = useState<Scheme | null>(null);
   const [order, setOrder] = useState<Scenario[]>(() => shuffled(scenarios));
   const [phase, setPhase] = useState<Phase>('intro');
@@ -91,6 +104,8 @@ export function Study() {
   const sessionStart = useRef<number>(Date.now());
   const taskStart = useRef<number>(0);
   const pending = useRef<StudyEvent[]>([]);
+  /** Bumped each time this task's label answer is submitted again after a step back. */
+  const revision = useRef(0);
 
   const scenario: Scenario | undefined = order[scenarioIndex];
   const task = scenario?.tasks[taskIndex];
@@ -209,6 +224,7 @@ export function Study() {
     setTaskIndex(0);
     setTrail([]);
     setGuess('');
+    revision.current = 0;
     setPhase('intro');
   };
 
@@ -224,12 +240,14 @@ export function Study() {
         session_id: sessionId.current,
         scenario_id: scenario.id,
         task_index: taskIndex,
+        revision: revision.current,
         prompt: LABEL_PROMPT,
         response: guess.trim(),
         ts: new Date().toISOString(),
       }),
     );
-    setGuess('');
+    // Kept rather than cleared, so stepping back shows what they wrote and can
+    // be edited. Cleared when the next task begins.
     taskStart.current = Date.now();
     setTrail([]);
     record('start');
@@ -249,6 +267,7 @@ export function Study() {
         setTrail([]);
         seq.current = 0;
         setGuess('');
+        revision.current = 0;
         setPhase('expect');
         return;
       }
@@ -263,6 +282,8 @@ export function Study() {
       setTaskIndex(0);
       setTrail([]);
       seq.current = 0;
+      setGuess('');
+      revision.current = 0;
       setPhase('scenario');
     },
     [flush, noteSave, order.length, record, scenario?.tasks.length, scenarioIndex, scheme, session, taskIndex],
@@ -289,6 +310,33 @@ export function Study() {
     record('back');
     setTrail((t) => t.slice(0, -1));
   };
+
+  /**
+   * Leave this card for the one before it. Bounded to the current task on
+   * purpose: stepping back across a task boundary would mean re-answering
+   * something already recorded as finished, and the run would no longer describe
+   * one pass through the study.
+   *
+   * Recorded as `stepback` rather than `back`, because wanting to change an
+   * answer is a different act from moving up a level inside the menu. Coming back
+   * to the question keeps what they wrote and bumps the revision, so a changed
+   * answer is stored as a new row and the highest revision is the final one.
+   */
+  const stepBack = () => {
+    if (phase === 'task') {
+      record('stepback', undefined, { nodePath: 'task' });
+      revision.current += 1;
+      setTrail([]);
+      setPhase('expect');
+      return;
+    }
+    if (phase === 'expect') {
+      record('stepback', undefined, { trail: [], nodePath: 'expect' });
+      setPhase('scenario');
+    }
+  };
+
+  const canStepBack = phase === 'task' || phase === 'expect';
 
   const scenarioTasks = scenario?.tasks.length ?? 0;
 
@@ -331,8 +379,7 @@ export function Study() {
    * context again.
    */
   const scenarioContext = scenario ? (
-    <section className="scenario-context" aria-labelledby="scenario-persona">
-      <h3 id="scenario-persona">{scenario.persona}</h3>
+    <section className="scenario-context" aria-label="Scenario">
       {contextParagraphs(scenario).map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>
       ))}
@@ -355,6 +402,9 @@ export function Study() {
     </div>
   ) : (
     <div className="restart-bar">
+      <button className="ghost small-btn" onClick={stepBack} disabled={!canStepBack}>
+        Back
+      </button>
       <button className="ghost small-btn" onClick={() => setConfirmRestart(true)}>
         Start over
       </button>
@@ -381,8 +431,9 @@ export function Study() {
         <div className="card">
         <h1>Navigation study</h1>
         <p>
-          You will be given a series of short tasks. For each one, click through the menu to where you would expect to
-          find the answer.
+          You will be given {studyShape.scenarios} scenarios, each with {studyShape.tasks} tasks. Every task has two
+          steps. First you tell us, in your own words, what you would call the section you would look in, before any
+          menu is on screen. Then the menu appears and you click through it to where you would go to do the task.
         </p>
         <p>
           Click through until you reach the place you would look. If you have no idea, click "I would not know where to look." Guessing
@@ -422,14 +473,9 @@ export function Study() {
         <p className="muted small">
           Scenario {scenarioIndex + 1} of {order.length}
         </p>
-        <h2>{scenario.persona}</h2>
         {contextParagraphs(scenario).map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
-        <p className="muted small">
-          {scenario.tasks.length} {scenario.tasks.length === 1 ? 'task' : 'tasks'}. The scenario stays on screen while
-          you work.
-        </p>
 
         <button
           className="primary"
@@ -498,6 +544,7 @@ export function Study() {
         {scenarioProgress}
         {scenarioContext}
         <h2 className="prompt">{task.prompt}</h2>
+        <p className="muted small">Select the page you&rsquo;d try first. Explain your choice.</p>
 
         {scheme.modes ? (
           <div className="modes" role="radiogroup" aria-label="Navigation mode">
@@ -556,7 +603,7 @@ export function Study() {
         <div className="actions">
           {trail.length > 0 ? (
             <>
-              <button onClick={goBack}>Back</button>
+              <button onClick={goBack}>Up one level</button>
               <button
                 className="primary"
                 // The current node is already the last trail entry, so the path

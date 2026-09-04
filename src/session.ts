@@ -12,7 +12,12 @@ export const persistenceMode: 'supabase' | 'local' = url && anonKey ? 'supabase'
 
 const client = url && anonKey ? createClient(url, anonKey) : null;
 
-export type EventKind = 'start' | 'click' | 'back' | 'submit' | 'giveup' | 'mode';
+/**
+ * `back` is moving up a level inside the menu. `stepback` is leaving a card
+ * entirely, which is a different act: it means the participant wanted to change
+ * something they had already answered.
+ */
+export type EventKind = 'start' | 'click' | 'back' | 'submit' | 'giveup' | 'mode' | 'stepback';
 
 export type StudyEvent = {
   session_id: string;
@@ -48,6 +53,12 @@ export type StudyResponse = {
   session_id: string;
   scenario_id: string;
   task_index: number;
+  /**
+   * 0 for the first answer to a task. A participant who steps back and answers
+   * again leaves a new row at the next revision rather than overwriting, so the
+   * change is visible and the highest revision is the final answer.
+   */
+  revision: number;
   prompt: string;
   response: string;
   ts: string;
