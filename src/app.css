@@ -284,26 +284,28 @@ button.ghost:hover { color: var(--ink); }
 
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
 
-/* Sticky rather than fixed. The menu is long enough that the buttons were
-   below the fold, and a participant should never have to scroll to find out
-   that Submit exists. Sticky keeps it in flow, so it stops at the end of the
-   card instead of hovering over the page after the menu runs out.
-   The negative margins bleed it to the card's edges; the padding puts the
-   content back where the card's own padding had it. */
+/* A raised bar that floats above the page rather than capping the card.
+   Sticky rather than fixed, so it comes to rest at the end of the card instead
+   of hovering over the page once the menu runs out. Inset from the card's edges
+   and lifted off the bottom, so rows scroll through the gap underneath it and
+   it reads as sitting on top of the page rather than being part of it. */
 .actionbar {
   position: sticky;
-  bottom: 0;
+  bottom: 1.25rem;
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  margin: 1.25rem -2rem -2rem;
-  padding: 0.9rem 2rem;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid var(--line);
-  border-radius: 0 0 10px 10px;
+  margin: 1.5rem 0 0.25rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  /* Two shadows: a tight one for the edge, a wide soft one for the lift. */
+  box-shadow:
+    0 1px 2px rgba(24, 26, 31, 0.06),
+    0 10px 24px -6px rgba(24, 26, 31, 0.18);
 }
 .actionbar .spacer { flex: 1 1 auto; }
 
