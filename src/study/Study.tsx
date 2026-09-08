@@ -680,7 +680,7 @@ export function Study() {
           })}
         </ul>
 
-        <div className="actions">
+        <div className="actionbar">
           <button
             className="primary"
             disabled={selected === null}
@@ -688,6 +688,7 @@ export function Study() {
           >
             Submit
           </button>
+          <span className="spacer" />
           <button className="ghost" onClick={() => void advance('giveup')}>
             I would not know where to look
           </button>

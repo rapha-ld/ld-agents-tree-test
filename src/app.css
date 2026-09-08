@@ -255,7 +255,22 @@ button.ghost:hover { color: var(--ink); }
 
 /* A pick is held rather than acted on, so the row has to say so until Submit.
    Colour alone would not: the tick is the part that reads as "this one". */
-.tick { font-size: 1.05rem; font-weight: 700; line-height: 1; width: 1rem; text-align: center; color: var(--accent); }
+/* A filled circle rather than a bare glyph. The tick has to read as a state at
+   a glance, from anywhere in a list of forty rows. */
+.tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
 .node.picked { background: var(--accent-bg); box-shadow: inset 3px 0 0 var(--accent); }
 .node.picked > span:first-child { font-weight: 600; color: var(--accent); }
 .node.picked:hover { background: var(--accent-bg); }
@@ -268,6 +283,29 @@ button.ghost:hover { color: var(--ink); }
 .node.open { font-weight: 600; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+
+/* Sticky rather than fixed. The menu is long enough that the buttons were
+   below the fold, and a participant should never have to scroll to find out
+   that Submit exists. Sticky keeps it in flow, so it stops at the end of the
+   card instead of hovering over the page after the menu runs out.
+   The negative margins bleed it to the card's edges; the padding puts the
+   content back where the card's own padding had it. */
+.actionbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.25rem -2rem -2rem;
+  padding: 0.9rem 2rem;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 10px 10px;
+}
+.actionbar .spacer { flex: 1 1 auto; }
 
 /* --- operator report ------------------------------------------------------- */
 
