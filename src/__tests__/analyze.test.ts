@@ -43,12 +43,13 @@ describe('analyze', () => {
     const results: ResultsFile = {
       sessions: [session('s-win'), session('s-lost')],
       events: [
+        // Sections start open, so a run is: pick a page, then confirm it. The
+        // pick is a click carrying a destination id.
         event('s-win', 'start', '', null, 0),
-        event('s-win', 'click', 'A', null, 500),
-        event('s-win', 'click', 'A / X', 'x', 900),
+        event('s-win', 'click', 'A / X / Y', 'y', 900),
         event('s-win', 'submit', 'A / X / Y', 'y', 1400),
         event('s-lost', 'start', '', null, 0),
-        event('s-lost', 'click', 'B', null, 800),
+        event('s-lost', 'click', 'B / Z', 'z', 800),
         event('s-lost', 'giveup', '', null, 2000),
       ],
     };
@@ -65,23 +66,23 @@ describe('analyze', () => {
     expect(outcome.medianMs).toBe(1700);
   });
 
-  it('counts a backtracking success as a success but not as direct', () => {
+  it('counts a changed pick as a success but not as direct', () => {
     seq = 0;
     const results: ResultsFile = {
       sessions: [session('s1')],
       events: [
         event('s1', 'start', '', null, 0),
-        event('s1', 'click', 'B', null, 300),
-        event('s1', 'back', '', null, 600),
-        event('s1', 'click', 'A', null, 900),
-        event('s1', 'click', 'A / X', 'x', 1100),
+        // Picked the wrong page, then picked again. Both are clicks carrying a
+        // destination id, which is what makes it two picks rather than one.
+        event('s1', 'click', 'B / Z', 'z', 300),
+        event('s1', 'click', 'A / X / Y', 'y', 1100),
         event('s1', 'submit', 'A / X / Y', 'y', 1500),
       ],
     };
     const [outcome] = analyze(results, [scheme], [scenario]);
     expect(outcome.successRate).toBe(1);
     expect(outcome.directnessRate).toBe(0);
-    // The first click went to B, which cannot reach the answer.
+    // The first pick was in B, which cannot reach the answer.
     expect(outcome.firstClickRate).toBe(0);
   });
 
@@ -296,7 +297,7 @@ describe('analyze', () => {
   });
 });
 
-describe('directness with a menu that expands in place', () => {
+describe('directness with every section open', () => {
   const scheme = parseScheme(
     `---\nid: m\nname: M\n---\n# Alpha\n- One -> one\n# Beta\n- Two -> two\n`,
     'm.md',
@@ -325,19 +326,19 @@ describe('directness with a menu that expands in place', () => {
   it('counts a straight path as direct', () => {
     const [outcome] = analyze({ sessions: [session], events: [
       ev(1, 'start', '', 0),
-      ev(2, 'click', 'Beta', 1),
+      ev(2, 'click', 'Beta / Two', 2, 'two'),
       ev(3, 'submit', 'Beta / Two', 2, 'two'),
     ] }, [scheme], [scenario]);
     expect(outcome.directnessRate).toBe(1);
   });
 
-  it('does not count opening the wrong section first, even with no backtrack', () => {
-    // Opening Alpha then Beta replaces the path without a `back` event, which
-    // is why absence of `back` cannot carry this on its own.
+  it('does not count picking one page and then another, even with no backtrack', () => {
+    // Changing a pick leaves two clicks and no `back`, which is why absence of
+    // `back` cannot carry this on its own.
     const [outcome] = analyze({ sessions: [session], events: [
       ev(1, 'start', '', 0),
-      ev(2, 'click', 'Alpha', 1),
-      ev(3, 'click', 'Beta', 1),
+      ev(2, 'click', 'Alpha / One', 2, 'one'),
+      ev(3, 'click', 'Beta / Two', 2, 'two'),
       ev(4, 'submit', 'Beta / Two', 2, 'two'),
     ] }, [scheme], [scenario]);
     expect(outcome.successRate).toBe(1);

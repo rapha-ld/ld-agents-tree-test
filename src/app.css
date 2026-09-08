@@ -9,6 +9,7 @@
   --bg: #fbfbfd;
   --panel: #ffffff;
   --accent: #405bff;
+  --accent-bg: #eef1ff;
   --best: #e8f5ec;
   --best-ink: #1a6b3c;
   --warn: #a4331f;
@@ -252,6 +253,28 @@ button.ghost:hover { color: var(--ink); }
    state, and it cannot go out of sync with the open flag. */
 .node.open .chev { transform: rotate(90deg); color: var(--accent); }
 
+/* A pick is held rather than acted on, so the row has to say so until Submit.
+   Colour alone would not: the tick is the part that reads as "this one". */
+/* A filled circle rather than a bare glyph. The tick has to read as a state at
+   a glance, from anywhere in a list of forty rows. */
+.tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.node.picked { background: var(--accent-bg); box-shadow: inset 3px 0 0 var(--accent); }
+.node.picked > span:first-child { font-weight: 600; color: var(--accent); }
+.node.picked:hover { background: var(--accent-bg); }
+
 /* Children sit inside their section rather than replacing the level, so the
    indent and the rule are what carry the nesting. The left rule reads as one
    continuous line down an open section. */
@@ -260,6 +283,31 @@ button.ghost:hover { color: var(--ink); }
 .node.open { font-weight: 600; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+
+/* A raised bar that floats above the page rather than capping the card.
+   Sticky rather than fixed, so it comes to rest at the end of the card instead
+   of hovering over the page once the menu runs out. Inset from the card's edges
+   and lifted off the bottom, so rows scroll through the gap underneath it and
+   it reads as sitting on top of the page rather than being part of it. */
+.actionbar {
+  position: sticky;
+  bottom: 1.25rem;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.5rem 0 0.25rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  /* Two shadows: a tight one for the edge, a wide soft one for the lift. */
+  box-shadow:
+    0 1px 2px rgba(24, 26, 31, 0.06),
+    0 10px 24px -6px rgba(24, 26, 31, 0.18);
+}
+.actionbar .spacer { flex: 1 1 auto; }
 
 /* --- operator report ------------------------------------------------------- */
 
