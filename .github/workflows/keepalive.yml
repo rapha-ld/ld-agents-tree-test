@@ -1,0 +1,43 @@
+# Keeps the Supabase project awake for the length of a study.
+#
+# Free-tier projects pause after seven days without activity, and a paused
+# project fails every write a participant makes. A study that runs over a few
+# weeks with quiet stretches between rounds of recruiting is exactly the shape
+# that hits this. One request a day counts as activity.
+#
+# The request reads `sessions.id`, the single column `anon` is granted. Row
+# level security returns no rows for it, so this reveals nothing and writes
+# nothing; it exists to be traffic.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # 09:00 UTC daily. Any hour works; a fixed one makes a gap easy to spot.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read one row
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is unset in repository variables."
+            exit 1
+          fi
+          status=$(curl -s -o /tmp/body.txt -w '%{http_code}' \
+            "$SUPABASE_URL/rest/v1/sessions?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "status: $status"
+          cat /tmp/body.txt
+          # A failure here means participants are losing runs right now, so the
+          # job fails loudly instead of logging and passing.
+          if [ "$status" != "200" ]; then
+            echo "The project did not answer with 200. Check whether it is paused."
+            exit 1
+          fi
