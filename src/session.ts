@@ -163,6 +163,28 @@ export async function withRetry(
   return { error: last, attempts: RETRY_DELAYS_MS.length + 1 };
 }
 
+/** Whether the database can be reached, and what went wrong when it cannot. */
+export type WriteCheck = { ok: true } | { ok: false; reason: string };
+
+/**
+ * Confirm the database is reachable before a participant starts, so a broken
+ * write path is found on the intro screen and not on task eleven.
+ *
+ * Reads instead of writing: `select id` is the one column `anon` is granted, and
+ * row level security returns no rows for it, so a healthy project answers with
+ * an empty array and no row is created. A sleeping project, a blocked request,
+ * or a missing grant each fail here with a reason worth showing.
+ */
+export async function checkWrite(): Promise<WriteCheck> {
+  if (!client) return { ok: false, reason: 'No database is configured for this build.' };
+  try {
+    const { error } = await client.from('sessions').select('id').limit(1);
+    return error ? { ok: false, reason: describe(error) } : { ok: true };
+  } catch (e) {
+    return { ok: false, reason: describe(e) };
+  }
+}
+
 /** Keep a local copy first, then try the database if one is configured. */
 export async function saveSession(session: StudySession): Promise<SaveResult> {
   const store = readLocal();
