@@ -25,6 +25,13 @@ import {
  */
 export const LABEL_PROMPT = 'What navigation label would you look for?';
 
+/**
+ * What the participant is told, and what the write actually said. The second
+ * part is for whoever is running the study: it is the difference between a
+ * sleeping project, a blocked request, and a missing privilege.
+ */
+type SaveIssue = { message: string; reason: string | null };
+
 /** A task can override the question; most do not. */
 function questionFor(task: { question?: string } | undefined): string {
   return task?.question ?? LABEL_PROMPT;
@@ -132,7 +139,7 @@ export function Study() {
   const [label, setLabel] = useState('');
   const [guess, setGuess] = useState('');
   const [confirmRestart, setConfirmRestart] = useState(false);
-  const [saveIssue, setSaveIssue] = useState<string | null>(null);
+  const [saveIssue, setSaveIssue] = useState<SaveIssue | null>(null);
   const [mode, setMode] = useState<string | null>(null);
 
   const sessionId = useRef<string>(crypto.randomUUID());
@@ -178,15 +185,22 @@ export function Study() {
    */
   const noteSave = useCallback((result: SaveResult) => {
     if (result.remote === 'failed') {
-      setSaveIssue(
-        result.local
+      setSaveIssue({
+        message: result.local
           ? 'Database not connected. Your answers are being saved locally.'
           : 'Your answers are not being saved. Please tell whoever is running this study.',
-      );
+        // The reason the write gave, kept next to the message. Without it the
+        // only record of why a run was lost is a console nobody opened, and a
+        // sleeping project reads the same as a blocked request or a bad grant.
+        reason: result.error ?? null,
+      });
       return;
     }
     if (!result.local && result.remote === 'skipped') {
-      setSaveIssue('Your answers are not being saved. Please tell whoever is running this study.');
+      setSaveIssue({
+        message: 'Your answers are not being saved. Please tell whoever is running this study.',
+        reason: null,
+      });
     }
   }, []);
 
@@ -459,7 +473,10 @@ export function Study() {
   ) : null;
 
   const saveNotice = saveIssue ? (
-    <p className="save-notice">{saveIssue}</p>
+    <p className="save-notice">
+      {saveIssue.message}
+      {saveIssue.reason === null ? null : <span className="save-reason">{saveIssue.reason}</span>}
+    </p>
   ) : null;
 
   const restartBar = confirmRestart ? (

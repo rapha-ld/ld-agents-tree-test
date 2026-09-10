@@ -323,6 +323,18 @@ button.ghost:hover { color: var(--ink); }
   line-height: 1.5;
 }
 
+/* The reason a write gave, under the sentence the participant reads. Monospace
+   because it is a database message quoted verbatim, and dim because it is for
+   whoever is moderating. */
+.save-reason {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.76rem;
+  color: var(--warn);
+  overflow-wrap: anywhere;
+}
+
 .controls { display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 1rem; }
 .controls label { font-size: 0.85rem; color: var(--muted); max-width: 18rem; }
 .controls input[type='range'] { display: block; width: 15rem; margin: 0.3rem 0; }
