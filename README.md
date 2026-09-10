@@ -389,6 +389,32 @@ answers are recorded" and asks them to tell you. **Take one throwaway run end to
 confirm a row lands before you send the link to anyone.** A collection run you have not
 checked is not a collection run.
 
+The notice carries the reason the write gave, under the sentence the participant reads.
+A sleeping project, a request an extension blocked, and a missing grant all produce the
+same lost run, and the SQLSTATE or fetch error is what tells them apart afterwards.
+
+Every write is tried three times, 400ms and 1200ms apart, while the failure still looks
+like the network. A SQLSTATE in the error means Postgres has already decided, so those
+fail once and report immediately.
+
+The intro screen checks the database before anyone answers anything, and says so above
+the Start button when it cannot be reached. The check reads `sessions.id`, the one column
+`anon` is granted, so it creates nothing. It leaves Start enabled on purpose: a
+participant who is sent a link and blocked from starting leaves nothing at all, and a
+local-only run can still be recovered from their browser.
+
+### Recovering a run that never reached the database
+
+Every run is written to `localStorage` first, so a failed write loses nothing that is
+still in that browser. When the save notice has appeared, the last screen offers
+**Download my answers** and **Copy my answers**, which hand back the same
+`nav-lab-results.json` shape that `pnpm pull` produces. Ask the participant for the file,
+then load it in the report the same way.
+
+A daily `keepalive` workflow reads one row so the project does not pause between rounds
+of recruiting. It fails loudly if the project stops answering, which is the same failure
+a participant would hit.
+
 Nothing in a browser can read results back. The `anon` key shipped in the published
 bundle is granted insert and nothing else, so no participant, and no stranger who finds
 the URL, can read anyone's answers, including their own. That is also why the report is
