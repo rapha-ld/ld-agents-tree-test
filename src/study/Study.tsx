@@ -5,6 +5,7 @@ import { defaultMode, sectionsForMode, visibleChildren } from '../score/cost';
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
   checkWrite,
+  exportLocalResults,
   persistenceMode,
   saveEvents,
   saveResponse,
@@ -32,6 +33,31 @@ export const LABEL_PROMPT = 'What navigation label would you look for?';
  * sleeping project, a blocked request, and a missing privilege.
  */
 type SaveIssue = { message: string; reason: string | null };
+
+/**
+ * Hand the browser-local copy back to the participant as a file. A run that
+ * failed to reach the database is still complete in localStorage, and this is
+ * how it gets to whoever is running the study.
+ */
+function downloadLocalResults(): void {
+  const blob = new Blob([exportLocalResults()], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'nav-lab-results.json';
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+/** The same data to the clipboard, for anyone who would rather paste it. */
+async function copyLocalResults(): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(exportLocalResults());
+    return true;
+  } catch {
+    // Clipboard access can be refused. The download button still works.
+    return false;
+  }
+}
 
 /** A task can override the question; most do not. */
 function questionFor(task: { question?: string } | undefined): string {
@@ -146,6 +172,7 @@ export function Study() {
    * Null while the check is still running or once it has passed.
    */
   const [writeBlocked, setWriteBlocked] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<string | null>(null);
 
   const sessionId = useRef<string>(crypto.randomUUID());
@@ -771,6 +798,22 @@ export function Study() {
       )}
       {saveIssue === null && persistenceMode === 'local' ? (
         <p className="muted small">Database not connected. Results are saved locally.</p>
+      ) : null}
+      {/* The one way back from a lost write. Everything is in this browser's
+          localStorage either way, and until now reading it out meant opening a
+          console, which is not something to ask a participant to do. */}
+      {saveIssue || persistenceMode === 'local' ? (
+        <div className="actions">
+          <button onClick={downloadLocalResults}>Download my answers</button>
+          <button
+            className="ghost"
+            onClick={() => {
+              void copyLocalResults().then(setCopied);
+            }}
+          >
+            {copied ? 'Copied' : 'Copy my answers'}
+          </button>
+        </div>
       ) : null}
       {/* Quiet rather than primary. For a participant the study has ended, and
           starting a second run against the same link files a duplicate; it is
