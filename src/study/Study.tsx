@@ -4,6 +4,7 @@ import { reportIncluded } from '../report-included';
 import { defaultMode, sectionsForMode, visibleChildren } from '../score/cost';
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
 import {
+  checkWrite,
   persistenceMode,
   saveEvents,
   saveResponse,
@@ -140,6 +141,11 @@ export function Study() {
   const [guess, setGuess] = useState('');
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [saveIssue, setSaveIssue] = useState<SaveIssue | null>(null);
+  /**
+   * Why the database could not be reached, checked once before anyone starts.
+   * Null while the check is still running or once it has passed.
+   */
+  const [writeBlocked, setWriteBlocked] = useState<string | null>(null);
   const [mode, setMode] = useState<string | null>(null);
 
   const sessionId = useRef<string>(crypto.randomUUID());
@@ -232,6 +238,27 @@ export function Study() {
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [flush]);
+
+  /**
+   * Check the database once, on the intro screen, before anyone has answered
+   * anything. A write path that is down is worth finding here: on task eleven
+   * the run is already lost, and whoever is moderating can still fix a sleeping
+   * project or a blocked request while the participant is reading the brief.
+   *
+   * The check does not stop the study. A participant who is sent a link and
+   * blocked from starting leaves nothing at all, where a local-only run is at
+   * least recoverable from their browser at the end.
+   */
+  useEffect(() => {
+    if (persistenceMode === 'local') return;
+    let live = true;
+    void checkWrite().then((result) => {
+      if (live) setWriteBlocked(result.ok ? null : result.reason);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const session = useCallback(
     (schemeId: string, finished: boolean): StudySession => ({
@@ -544,6 +571,14 @@ export function Study() {
         {persistenceMode === 'local' ? (
           <p className="muted small">Database not connected. Results are being saved locally.</p>
         ) : null}
+
+        {writeBlocked === null ? null : (
+          <p className="write-warning">
+            The database cannot be reached, so this run would be saved only in this browser. Tell whoever is
+            running the study before you start.
+            <span className="save-reason">{writeBlocked}</span>
+          </p>
+        )}
 
         <button className="primary" onClick={() => void start()} disabled={label.trim() === ''}>
           Start

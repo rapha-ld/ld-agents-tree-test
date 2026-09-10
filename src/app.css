@@ -335,6 +335,19 @@ button.ghost:hover { color: var(--ink); }
   overflow-wrap: anywhere;
 }
 
+/* Sits inside the intro card, so no negative margin. Shown before anyone
+   answers anything, which is the only moment a broken write path is still
+   cheap to fix. */
+.write-warning {
+  margin: 0 0 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--warn);
+  border-radius: 8px;
+  color: var(--warn);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .controls { display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 1rem; }
 .controls label { font-size: 0.85rem; color: var(--muted); max-width: 18rem; }
 .controls input[type='range'] { display: block; width: 15rem; margin: 0.3rem 0; }
