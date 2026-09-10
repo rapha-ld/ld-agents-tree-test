@@ -116,6 +116,53 @@ function describe(error: unknown): string {
   return String(error);
 }
 
+/**
+ * Whether a failure is worth trying again. A dropped connection, a sleeping
+ * project, or a proxy that ate one request will succeed on the next attempt. A
+ * constraint violation or a missing privilege will fail identically every time,
+ * and retrying it delays the notice the participant needs to see.
+ *
+ * PostgREST answers with a SQLSTATE in `code`, so anything carrying one came
+ * from the database and has already been decided. A thrown fetch, or an error
+ * with no code, is the network.
+ */
+export function isTransient(error: unknown): boolean {
+  if (error instanceof Error) return true;
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = String((error as { code: unknown }).code);
+    // PostgREST's own transport codes, as opposed to SQLSTATEs from Postgres.
+    return code === '' || code === 'FetchError' || code.startsWith('5');
+  }
+  return true;
+}
+
+/** How long to wait before each retry. Two retries, both inside a few seconds. */
+export const RETRY_DELAYS_MS = [400, 1200];
+
+/**
+ * Run a write, retrying while the failure still looks like the network. `sleep`
+ * is injectable so a test does not have to wait out the backoff.
+ */
+export async function withRetry(
+  attempt: () => PromiseLike<{ error: unknown }>,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<{ error: unknown; attempts: number }> {
+  let last: unknown = null;
+  for (let i = 0; i <= RETRY_DELAYS_MS.length; i += 1) {
+    try {
+      const { error } = await attempt();
+      if (!error) return { error: null, attempts: i + 1 };
+      last = error;
+    } catch (thrown) {
+      last = thrown;
+    }
+    if (!isTransient(last)) return { error: last, attempts: i + 1 };
+    const delay = RETRY_DELAYS_MS[i];
+    if (delay !== undefined) await sleep(delay);
+  }
+  return { error: last, attempts: RETRY_DELAYS_MS.length + 1 };
+}
+
 /** Keep a local copy first, then try the database if one is configured. */
 export async function saveSession(session: StudySession): Promise<SaveResult> {
   const store = readLocal();
@@ -126,23 +173,20 @@ export async function saveSession(session: StudySession): Promise<SaveResult> {
 
   if (!client) return { local, remote: 'skipped' };
 
-  try {
-    // Insert at the start, update at the end, rather than upserting both times.
-    // An upsert's ON CONFLICT has to read the conflicting row, and the privilege
-    // that needs is less obvious than a plain update's. Being explicit about
-    // which call is which keeps the grants in schema.sql easy to reason about.
-    const { error } =
-      session.finished_at === null
-        ? await client.from('sessions').insert(session)
-        : await client
-            .from('sessions')
-            .update({ finished_at: session.finished_at, participant_label: session.participant_label })
-            .eq('id', session.id);
-    if (error) return { local, remote: 'failed', error: error.message };
-    return { local, remote: 'ok' };
-  } catch (e) {
-    return { local, remote: 'failed', error: describe(e) };
-  }
+  // Insert at the start, update at the end, rather than upserting both times.
+  // An upsert's ON CONFLICT has to read the conflicting row, and the privilege
+  // that needs is less obvious than a plain update's. Being explicit about
+  // which call is which keeps the grants in schema.sql easy to reason about.
+  const { error } = await withRetry(() =>
+    session.finished_at === null
+      ? client.from('sessions').insert(session)
+      : client
+          .from('sessions')
+          .update({ finished_at: session.finished_at, participant_label: session.participant_label })
+          .eq('id', session.id),
+  );
+  if (error) return { local, remote: 'failed', error: describe(error) };
+  return { local, remote: 'ok' };
 }
 
 export async function saveEvents(events: StudyEvent[]): Promise<SaveResult> {
@@ -154,13 +198,9 @@ export async function saveEvents(events: StudyEvent[]): Promise<SaveResult> {
 
   if (!client) return { local, remote: 'skipped' };
 
-  try {
-    const { error } = await client.from('events').insert(events);
-    if (error) return { local, remote: 'failed', error: error.message };
-    return { local, remote: 'ok' };
-  } catch (e) {
-    return { local, remote: 'failed', error: describe(e) };
-  }
+  const { error } = await withRetry(() => client.from('events').insert(events));
+  if (error) return { local, remote: 'failed', error: describe(error) };
+  return { local, remote: 'ok' };
 }
 
 /** Written once per task, before the participant sees the menu. */
@@ -171,13 +211,9 @@ export async function saveResponse(response: StudyResponse): Promise<SaveResult>
 
   if (!client) return { local, remote: 'skipped' };
 
-  try {
-    const { error } = await client.from('responses').insert(response);
-    if (error) return { local, remote: 'failed', error: error.message };
-    return { local, remote: 'ok' };
-  } catch (e) {
-    return { local, remote: 'failed', error: describe(e) };
-  }
+  const { error } = await withRetry(() => client.from('responses').insert(response));
+  if (error) return { local, remote: 'failed', error: describe(error) };
+  return { local, remote: 'ok' };
 }
 
 export function exportLocalResults() {
