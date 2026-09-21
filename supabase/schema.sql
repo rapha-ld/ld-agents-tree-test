@@ -113,3 +113,8 @@ grant select (id) on table sessions to anon;
 -- Delete is granted to service_role only, never to anon: a participant must not
 -- be able to remove anyone's answers, including their own.
 grant select, delete on table sessions, events, responses to service_role;
+
+-- Update on sessions, for scripts/backfill-finished.ts, which reconstructs
+-- finished_at from the events of runs that reached the end while the client's
+-- own update was failing.
+grant update on table sessions to service_role;
