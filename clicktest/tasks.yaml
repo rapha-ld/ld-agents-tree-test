@@ -54,7 +54,7 @@
 # audiences, measurement.
 
 first_impression:
-  look: "Look at this navigation for 10 seconds. Click around and explore."
+  look: "Look at this navigation for 10 seconds."
   seconds: 10
   question: "What do you think you can do with this product?"
 
