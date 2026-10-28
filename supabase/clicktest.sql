@@ -38,7 +38,8 @@ alter table ct_events add constraint ct_events_kind_check
 
 create index if not exists ct_events_session_idx on ct_events (session_id, task_id, seq);
 
--- One row per event, so a retried batch is ignored on conflict instead of doubled.
+-- One row per event. A retried batch that already landed is refused as a duplicate, and the
+-- client treats that refusal (23505) as saved.
 create unique index if not exists ct_events_session_seq_key on ct_events (session_id, seq);
 
 alter table ct_sessions enable row level security;
