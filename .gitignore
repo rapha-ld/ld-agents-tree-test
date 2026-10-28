@@ -4,3 +4,5 @@ dist
 .env.local
 .DS_Store
 nav-lab-results.json
+clicktest-results.json
+clicktest-report.md
