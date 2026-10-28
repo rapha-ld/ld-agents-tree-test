@@ -1,0 +1,66 @@
+/* Ported from gonfalon@2144b90fc88 on 2026-05-14T20:17:37Z */
+/* Source: packages/chrome/src/internal/LayoutHeader/LayoutHeader.module.css */
+.header {
+  grid-area: header;
+  padding-inline: var(--lp-size-12) var(--lp-size-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lp-size-12);
+  height: var(--lp-size-64);
+  min-height: var(--lp-size-64);
+}
+
+.header .location {
+  --cols: var(--lp-size-32) auto;
+
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  /* stylelint-disable-next-line csstools/value-no-unknown-custom-properties */
+  transition-duration: var(--transition-duration);
+  /* stylelint-disable-next-line csstools/value-no-unknown-custom-properties */
+  transition-timing-function: var(--transition-timing-fn);
+}
+
+.header .location:has(.toggle[aria-hidden]) {
+  padding-inline-start: var(--lp-size-4);
+  --cols: 0 auto;
+}
+
+.header .newNavLocation {
+  display: flex;
+  padding-inline-start: var(--lp-size-4);
+}
+
+.header .actions {
+  display: flex;
+  align-items: center;
+  gap: var(--lp-size-12);
+}
+
+.toggle {
+  transition-property: opacity;
+  /* stylelint-disable-next-line csstools/value-no-unknown-custom-properties */
+  transition-duration: var(--transition-duration);
+  /* stylelint-disable-next-line csstools/value-no-unknown-custom-properties */
+  transition-timing-function: var(--transition-timing-fn);
+}
+
+.toggle[aria-hidden] {
+  opacity: 0;
+}
+
+.maxWidthAndCentered {
+  padding-inline: var(--lp-size-10);
+  max-width: var(--lp-size-1200);
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* Click test: the title the breadcrumbs used to show. */
+.title {
+  margin: 0;
+  font: var(--lp-text-heading-2-semibold, 600 16px/1.4 Inter, sans-serif);
+  color: var(--lp-color-text-ui-primary);
+}

@@ -1,0 +1,222 @@
+# Click test tasks. Kristi owns this list. With no tasks the study shows
+# "not open yet", and ?sample=1 runs the sample task below so the harness can
+# be tried.
+#
+# Source: Confluence "User testing scenarios v2 (unmoderated)" (PD 5434280298).
+# Wording here matches that page. Everything runs in the order written:
+# first impression, scenarios 1 to 5, then the wrap-up questions.
+#
+# Every task starts on Home with all nav sections open, so a page is one
+# click away and a section header click closes its section.
+#
+# Tasks live inside scenarios. A scenario is a short story shown on its own
+# card once, before its first task, and above every task on the task card.
+# A task outside any scenario can go under `tasks:`. After every task the
+# participant answers `follow_up`.
+#
+# Each scenario:
+#   id:            short and stable, e.g. new-hire
+#   text:          the story the participant reads
+#   tasks:         its tasks, in order
+#
+# The first impression (a timed look at the nav, then an open question) and
+# the wrap-up questions are set below as well.
+#
+# Each task:
+#   id:            short and stable, e.g. create-agent-config. Results are keyed on it.
+#   prompt:        what the participant reads. With the scenario text it must
+#                  make sense on its own, without the task before it. Use the
+#                  participant's words where possible.
+#   start:
+#     page:          page id the prototype opens on (see src/clicktest/nav/data.ts)
+#     collapsed:     true to start on the icon rail (optional)
+#     open_sections: section ids open at the start, e.g. [features] (optional; omitted = all open)
+#   target:        page ids that count as the right place
+#   success_paths: every correct route, as the ordered track ids of its clicks.
+#                  Any click off every path counts as a failure. Hovering is not a
+#                  click, so a hover-open drawer adds no step.
+#
+# Track ids:
+#   section:<section-id>      section header (sidebar or drawer), e.g. section:agents
+#   leaf:<page-id>            a page in a section, sidebar, drawer or rail flyout
+#   pinned:home|approvals|create
+#   create:<type-id>          a Create menu item, e.g. create:ai-config, create:context-kind
+#   search:field              the search field or the rail's search button
+#   palette:<result-id>       a search result, e.g. palette:configs
+#   rail:<section-id>         a section button on the icon rail
+#   nav:collapse, nav:expand
+#   project                   the project switcher
+#   footer:<id>               profile, settings, connections, help, whats-new (each counts as a pick)
+#   cta:<page-id>             the page's main button
+#   Anything else is recorded as other:<label> and counts as off the path.
+#
+# Section ids: shortcuts, features, agents, experimentation, observability,
+# audiences, measurement.
+
+first_impression:
+  look: "Look at this navigation for 10 seconds. Click around and explore."
+  seconds: 10
+  question: "What do you think you can do with this product?"
+
+# Asked after every task. A rating at or below `probe.at_or_below` adds the
+# optional probe question.
+follow_up:
+  question: "How confident are you that you picked the right page?"
+  low: "Not at all confident"
+  high: "Very confident"
+  probe:
+    at_or_below: 4
+    question: "What made you unsure?"
+
+tasks: []
+
+scenarios:
+  - id: s1-first-week
+    text: "You started at your company this week. Your team already has LaunchDarkly set up, and your first ticket is to ship a code change safely."
+    tasks:
+      - id: s1-ship-behind-flag
+        prompt: "Ship your change so you can turn it off instantly if something breaks. Select the page you'd try first."
+        start:
+          page: home
+        target: [flags]
+        success_paths:
+          - [pinned:create, create:flag]
+          - [leaf:flags]
+          - [search:field, palette:flags]
+          - [leaf:flags, cta:flags]
+          - [search:field, palette:flags, cta:flags]
+          - [search:field, palette:action:create-flag]
+      - id: s1-ab-test
+        prompt: "Create an A/B test for that change. Select the page you'd try first."
+        start:
+          page: home
+        target: [experiments]
+        success_paths:
+          - [pinned:create, create:experiment]
+          - [leaf:experiments]
+          - [search:field, palette:experiments]
+          - [leaf:experiments, cta:experiments]
+          - [search:field, palette:experiments, cta:experiments]
+      - id: s1-review-approval
+        prompt: "A teammate made a change to a new login flow and has requested your sign-off before it takes effect for your users. Where would you go to review it?"
+        start:
+          page: home
+        target: [approvals]
+        success_paths:
+          - [pinned:approvals]
+          - [search:field, palette:approvals]
+
+  - id: s2-on-call
+    text: "You're a developer on call, and your pager just went off. A code change that shipped an hour ago is breaking the checkout flow for some customers. You need to figure out what went wrong."
+    tasks:
+      - id: s2-who-saw-change
+        prompt: "Find out exactly which users or accounts saw the change while it was on. Select the page you'd try first."
+        start:
+          page: home
+        target: [contexts]
+        success_paths:
+          - [leaf:contexts]
+          - [search:field, palette:contexts]
+      - id: s2-watch-user
+        prompt: "Watch what a specific user did right before the checkout broke. Select the page you'd try first."
+        start:
+          page: home
+        target: [sessions]
+        success_paths:
+          - [leaf:sessions]
+          - [search:field, palette:sessions]
+
+  - id: s3-ai-agent
+    text: "You've been told by upper management that the AI support agent your team runs is getting expensive and occasionally provides poor answers."
+    tasks:
+      - id: s3-agent-cost
+        prompt: "Check what the agent is costing you. Select the page you'd try first."
+        start:
+          page: home
+        target: [insights]
+        success_paths:
+          - [leaf:insights]
+          - [search:field, palette:insights]
+      - id: s3-test-prompt
+        prompt: "Your support agent's replies sound stiff. Try a few ways to make them friendlier before any customers see them. Select the page you'd try first."
+        start:
+          page: home
+        target: [playgrounds]
+        success_paths:
+          - [leaf:playgrounds]
+          - [search:field, palette:playgrounds]
+          - [leaf:playgrounds, cta:playgrounds]
+          - [search:field, palette:playgrounds, cta:playgrounds]
+      # Tests whether people go to Flags instead, which the switcher used to prevent.
+      - id: s3-rollout-prompt
+        prompt: "Your prompt change is ready. Roll it out to 10% of customers first. Select the page you'd try first."
+        start:
+          page: home
+        target: [configs]
+        success_paths:
+          - [leaf:configs]
+          - [search:field, palette:configs]
+
+  - id: s4-sdk-check
+    text: "You just added the LaunchDarkly SDK to your app. You want to confirm LaunchDarkly is receiving data from your app."
+    tasks:
+      - id: s4-sdk-data
+        prompt: "Where would you go to inspect this information?"
+        start:
+          page: home
+        target: [debugger]
+        success_paths:
+          - [leaf:debugger]
+          - [search:field, palette:debugger]
+
+  - id: s5-beta
+    text: "Your team is planning a beta release."
+    tasks:
+      - id: s5-beta-segment
+        prompt: "Group your beta customers so you can target them together. Select the page you'd try first."
+        start:
+          page: home
+        target: [segments]
+        success_paths:
+          - [pinned:create, create:segment]
+          - [leaf:segments]
+          - [search:field, palette:segments]
+          - [leaf:segments, cta:segments]
+          - [search:field, palette:segments, cta:segments]
+      - id: s5-success-metric
+        prompt: "Start tracking checkout conversion so you can judge this beta, and future ones, by it. Select the page you'd try first."
+        start:
+          page: home
+        target: [metrics]
+        success_paths:
+          - [pinned:create, create:metric]
+          - [leaf:metrics]
+          - [search:field, palette:metrics]
+          - [leaf:metrics, cta:metrics]
+          - [search:field, palette:metrics, cta:metrics]
+
+wrap_up:
+  - id: can-do
+    question: "Can LaunchDarkly do each of these?"
+    columns: ["Yes", "Not sure", "No"]
+    options:
+      - "Release a feature to a small percentage of users first"
+      - "Manage the prompts and AI models your agents use"
+      - "Run A/B tests to compare versions of a feature"
+      - "Replay what a user did in your app"
+      - "Show different experiences to specific groups of customers"
+      - "Measure how a change affects metrics like conversion rate"
+      - "Host and deploy your application"
+      - "Train or fine-tune your own AI models"
+      - "Process customer payments"
+
+sample_tasks:
+  - id: SAMPLE-find-configs
+    prompt: "Sample task. You want to change the model your AI agent uses. Where would you go to do this?"
+    start:
+      page: flags
+      open_sections: [features]
+    target: [configs]
+    success_paths:
+      - [leaf:configs]
+      - [search:field, palette:configs]
