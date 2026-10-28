@@ -627,7 +627,7 @@ export function ClickTest() {
           {timedOut && <p className={styles.timedOut}>Time ran out on that task.</p>}
           {gaveUp && FOLLOW_UP.gave_up && (
             <TextField value={unsure} onChange={setUnsure} autoFocus className={styles.field}>
-              <Label className={styles.question}>{FOLLOW_UP.gave_up} (optional)</Label>
+              <Label className={styles.question}>{FOLLOW_UP.gave_up}</Label>
               <TextArea rows={3} />
             </TextField>
           )}
@@ -664,7 +664,7 @@ export function ClickTest() {
               </Slider>
               {probing && FOLLOW_UP.probe && (
                 <TextField value={unsure} onChange={setUnsure} className={styles.field}>
-                  <Label className={styles.question}>{FOLLOW_UP.probe.question} (optional)</Label>
+                  <Label className={styles.question}>{FOLLOW_UP.probe.question}</Label>
                   <TextArea rows={3} />
                 </TextField>
               )}
