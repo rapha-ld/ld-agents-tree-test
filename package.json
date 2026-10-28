@@ -14,19 +14,24 @@
     "score": "tsx scripts/score.ts",
     "pull": "tsx scripts/pull-results.ts",
     "discard": "tsx scripts/discard.ts",
-    "backfill": "tsx scripts/backfill-finished.ts"
+    "backfill": "tsx scripts/backfill-finished.ts",
+    "score:clicktest": "tsx scripts/score-clicktest.ts"
   },
   "dependencies": {
+    "@launchpad-ui/components": "0.25.0",
+    "@launchpad-ui/icons": "0.26.7",
+    "@launchpad-ui/tokens": "0.19.0",
     "@supabase/supabase-js": "^2.45.4",
     "js-yaml": "^4.1.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "^19.3.1",
+    "react-aria-components": "1.21.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^26.2.0",
-    "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.3.2",
     "tsx": "^4.19.1",
     "typescript": "^5.6.3",
