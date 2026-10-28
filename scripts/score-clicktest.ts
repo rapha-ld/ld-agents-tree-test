@@ -5,12 +5,12 @@
  *
  *   pnpm score:clicktest                      read from Supabase (service role)
  *   pnpm score:clicktest --file answers.json  read a participant's downloaded file instead
- *   pnpm score:clicktest --include-pilots     keep sessions whose pid starts with PILOT-
+ *   pnpm score:clicktest --cohort pilot       score pilots (PILOT-) instead of the main study;
+ *                                             also trial (TEST-, DISCARD-) or all. Default: main.
  *
  * SUPABASE_SERVICE_ROLE_KEY is read from .env.local and is never VITE_-prefixed;
  * see pull-results.ts for why.
  */
-import { createClient } from '@supabase/supabase-js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -18,54 +18,20 @@ import { scoreTask } from '../src/clicktest/harness/score';
 import type { TaskScore } from '../src/clicktest/harness/score';
 import { median } from '../src/report/analyze';
 import { parseTasks } from '../src/clicktest/harness/parseTasks';
-import type { CtEvent, CtSession, Outcome } from '../src/clicktest/harness/types';
-import { fetchAllRows } from '../src/pull/paged';
+import type { Outcome } from '../src/clicktest/harness/types';
+import { cohortOf } from '../src/clicktest/harness/cohort';
+import { cohortArg, loadClicktest } from './clicktest-data';
 
 const args = process.argv.slice(2);
 const fileArg = args.includes('--file') ? args[args.indexOf('--file') + 1] : null;
-const includePilots = args.includes('--include-pilots');
-
-async function load(): Promise<{ sessions: CtSession[]; events: CtEvent[] }> {
-  if (fileArg) return JSON.parse(readFileSync(fileArg, 'utf8'));
-  try {
-    process.loadEnvFile('.env.local');
-  } catch {
-    // The variables may already be in the environment.
-  }
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local, or pass --file.');
-    process.exit(1);
-  }
-  const client = createClient(url, key, { auth: { persistSession: false } });
-  const [sessions, events] = await Promise.all([
-    fetchAllRows<CtSession>(async (from, to) => {
-      const { data, error } = await client.from('ct_sessions').select('*').order('started_at').range(from, to);
-      return { data: data as CtSession[] | null, error };
-    }),
-    fetchAllRows<CtEvent>(async (from, to) => {
-      const { data, error } = await client.from('ct_events').select('*').order('id').range(from, to);
-      return { data: data as CtEvent[] | null, error };
-    }),
-  ]);
-  return { sessions, events };
-}
+const cohort = cohortArg(args);
 
 const file = parseTasks(readFileSync(join(process.cwd(), 'clicktest/tasks.yaml'), 'utf8'));
 const tasks = [...file.tasks, ...(file.sample_tasks ?? [])];
 
-const { sessions, events } = await load();
-const kept = sessions.filter((s) => includePilots || !(s.pid ?? '').startsWith('PILOT-'));
+const { sessions, events: unique } = await loadClicktest(fileArg);
+const kept = sessions.filter((s) => cohort === 'all' || cohortOf(s.pid) === cohort);
 
-// A retried batch can land twice in data written before the unique index; keep one copy of each.
-const seen = new Set<string>();
-const unique = events.filter((e) => {
-  const key = `${e.session_id}:${e.seq}`;
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-});
 const bySession = new Map<string, typeof unique>();
 for (const e of unique) {
   const list = bySession.get(e.session_id);
@@ -102,7 +68,7 @@ const OUTCOMES: Outcome[] = ['success', 'recovered', 'failure', 'giveup', 'timeo
 const lines: string[] = [];
 lines.push('# Click test results', '');
 lines.push(
-  `${kept.length} sessions (${sessions.length - kept.length} pilot sessions left out). ${attempts.length} task attempts.`,
+  `Cohort: ${cohort}. ${kept.length} sessions (${sessions.length - kept.length} from other cohorts left out). ${attempts.length} task attempts.`,
   '',
 );
 lines.push(
@@ -182,14 +148,20 @@ for (const q of openQuestions) {
   for (const a of texts) lines.push(`- ${a.value as string}`);
   lines.push('');
 }
-const unsure = answers.filter((a) => a.question === 'unsure-why' && typeof a.value === 'string');
-if (unsure.length && file.follow_up?.probe) {
-  lines.push(`## ${file.follow_up.probe.question}`, '');
+// The open answers after a low rating and after "I give up", grouped by task.
+const openByTask = [
+  { id: 'unsure-why', question: file.follow_up?.probe?.question },
+  { id: 'giveup-why', question: file.follow_up?.gave_up },
+];
+for (const { id, question } of openByTask) {
+  const texts = answers.filter((a) => a.question === id && typeof a.value === 'string' && a.value);
+  if (texts.length === 0 || !question) continue;
+  lines.push(`## ${question}`, '');
   for (const t of tasks) {
-    const texts = unsure.filter((a) => a.task_id === t.id);
-    if (texts.length === 0) continue;
+    const own = texts.filter((a) => a.task_id === t.id);
+    if (own.length === 0) continue;
     lines.push(`### ${t.id}`, '');
-    for (const a of texts) lines.push(`- ${a.value as string}`);
+    for (const a of own) lines.push(`- ${a.value as string}`);
     lines.push('');
   }
 }
