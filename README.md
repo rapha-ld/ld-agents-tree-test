@@ -521,6 +521,19 @@ Directness is the metric the model predicts and the study measures. Regressing o
 against the other is what turns α and the reveal penalties from guesses into
 calibrated numbers.
 
+## Click test (clicktest.html)
+
+An unmoderated click test of the new global nav, separate from the tree test. Participants get the nav prototype from `launchdarkly/prototype-playground` (`src/prototypes/cmwinters/nav-explorations`, copied into `src/clicktest/nav` and changed for the test), one task at a time, and every press is recorded and scored against each task's success paths.
+
+- **Link:** `https://launchdarkly-labs.github.io/ld-nav-lab/clicktest.html?pid={participant id}&src={panel}`.
+- **Flow:** name, a 10-second look at the nav (clickable, clicks logged under `first-look`) with one open question, then 5 scenarios and 11 tasks in the order written, each task followed by a 1 to 7 confidence rating (4 or lower adds an optional "What made you unsure?"), then a Yes / Not sure / No grid of what LaunchDarkly can do. Each pick of a page, Create item, search result or page button becomes the current answer: the card shows "You selected X. Is this your answer?" with Confirm, the nav item is ringed, and they can keep clicking. Each pick is a `select` event; Confirm records `found` with the last one. Every nav page, including Shortcuts, is in search, and the report shows how often search was used and used first. Answers are stored as `answer` events.
+- **Tasks:** `clicktest/tasks.yaml`, copied from the Confluence page "User testing scenarios v2 (unmoderated)". The file explains the format and lists every track id. With no tasks the study shows "not open yet"; `?sample=1` runs the sample task instead. `pnpm test` checks that every task points at real pages and sections.
+- **Data:** run `supabase/clicktest.sql` once in the Supabase SQL editor. It adds `ct_sessions` and `ct_events` next to the tree-test tables, with the same insert-only access for the public key.
+- **Scoring:** `pnpm score:clicktest` writes `clicktest-results.json` (attempts and answers) and `clicktest-report.md` (one row per task with median confidence, the most common click paths, the grid tallies and the open answers). Sessions whose pid starts with `PILOT-` are left out unless you pass `--include-pilots`. `--file` scores a JSON file of sessions and events instead of the database.
+- **Outcomes:** success means every click followed a success path and the participant confirmed a selection on a target page. Recovered means they reached a target page after leaving the path, and counts as a failure. Give-ups and 3 minute timeouts are counted on their own.
+- **Participants:** the intro asks for a name, stored as `participant_name` on `ct_sessions` next to `pid`, so every click can be tied to a person.
+- **Devices:** windows under 1200×650 and touch screens see a "switch to a laptop" screen. `?dev=1` skips that check.
+
 ## Re-running the extraction
 
 ```bash
