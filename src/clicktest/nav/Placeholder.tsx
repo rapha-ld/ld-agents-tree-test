@@ -15,6 +15,7 @@ const SHAPES: Record<string, Shape> = {
   dashboards: 'dashboard',
   insights: 'dashboard',
   optimization: 'dashboard',
+  'observability-metrics': 'dashboard',
   logs: 'table',
   traces: 'table',
   errors: 'table',

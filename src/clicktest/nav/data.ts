@@ -82,8 +82,9 @@ export const SECTIONS: NavSection[] = [
       { id: 'errors', label: 'Errors' },
       { id: 'logs', label: 'Logs' },
       { id: 'traces', label: 'Traces' },
-      { id: 'dashboards', label: 'Dashboards' },
+      { id: 'observability-metrics', label: 'Observability metrics' },
       { id: 'alerts', label: 'Alerts' },
+      { id: 'dashboards', label: 'Dashboards' },
     ],
   },
   {
@@ -127,7 +128,6 @@ export const PINNED: PinnedItem[] = [
 export const STARRED: NavLeaf[] = [
   { id: 'shortcut-cleanup', label: 'Cleanup' },
   { id: 'shortcut-my-flags', label: 'My flags' },
-  { id: 'shortcut-guarded', label: 'Guarded rollouts' },
 ];
 
 export interface CreateType {
@@ -201,6 +201,7 @@ export const PAGE_CTA: Record<string, string | null> = {
   errors: null,
   logs: null,
   traces: null,
+  'observability-metrics': null,
   dashboards: 'Create dashboard',
   alerts: 'Create alert',
   contexts: null,
@@ -219,7 +220,6 @@ export const PAGE_SUBTITLE: Record<string, string> = {
   approvals: "Pending decisions waiting on you, and the status of items you've asked others to approve.",
   'shortcut-cleanup': 'Flags that look stale and are candidates for removal.',
   'shortcut-my-flags': 'Flags you maintain, in one list.',
-  'shortcut-guarded': 'Flags with automatic health monitoring enabled.',
   flags: 'Every flag in this project, with its status in each environment.',
   releases: 'Flags moving through staged phases across environments.',
   configs: 'Model and instruction variations, served at runtime and adjustable without a deploy.',
@@ -237,6 +237,7 @@ export const PAGE_SUBTITLE: Record<string, string> = {
   errors: 'Exceptions with stack traces, ranked by how often each occurs.',
   logs: 'Searchable log lines from your services.',
   traces: 'Timing across services, span by span.',
+  'observability-metrics': 'Charts of the numeric signals your services emit over time.',
   dashboards: 'Custom charts of the numbers you care about most.',
   alerts: 'Rules that notify you when a metric crosses a threshold.',
   contexts: 'Every person, device, or organization that has evaluated a flag.',
