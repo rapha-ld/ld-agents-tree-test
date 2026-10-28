@@ -66,6 +66,7 @@ type Phase =
   | 'look-brief'
   | 'look'
   | 'impression'
+  | 'overview'
   | 'brief'
   | 'active'
   | 'rating'
@@ -114,6 +115,10 @@ export function ClickTest() {
   const task: Task | undefined = tasks[index];
   const scenarioIds = useMemo(() => [...new Set(tasks.flatMap((t) => (t.scenario ? [t.scenario.id] : [])))], [tasks]);
   const siblings = task?.scenario ? tasks.filter((t) => t.scenario?.id === task.scenario?.id) : [];
+  const taskRange = useMemo(() => {
+    const counts = scenarioIds.map((id) => tasks.filter((t) => t.scenario?.id === id).length);
+    return [Math.min(...counts), Math.max(...counts)];
+  }, [scenarioIds, tasks]);
   const seq = useRef(0);
   const buffer = useRef<CtEvent[]>([]);
   const currentPage = useRef<string | null>(null);
@@ -222,19 +227,25 @@ export function ClickTest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, task, record]);
 
-  // The first look: participants can explore the nav while the countdown runs, then the question
-  // replaces it. Those clicks are kept under the task id "first-look" and never scored.
+  // The first look: every section open while the countdown runs, then the question replaces it.
+  // Presses are swallowed so nothing opens or closes, but scrolling still works, so the sections
+  // below the fold can be seen.
   useEffect(() => {
     if (phase !== 'look') return;
     const tick = window.setInterval(() => setLookLeft((n) => n - 1), 1000);
-    setSink((kind, trackId, meta) => record(kind, trackId, meta, 'first-look'));
-    const remove = installClickListener();
+    const swallow = (e: Event) => {
+      if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.target instanceof Element && e.target.closest('[data-harness]')) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const kinds = ['pointerdown', 'mousedown', 'pointerup', 'click', 'keydown'] as const;
+    kinds.forEach((k) => document.addEventListener(k, swallow, true));
     return () => {
       window.clearInterval(tick);
-      setSink(null);
-      remove();
+      kinds.forEach((k) => document.removeEventListener(k, swallow, true));
     };
-  }, [phase, record]);
+  }, [phase]);
 
   // Ring the nav item for the current answer (and the page button, if that was the pick), so they
   // can see what they've selected while they keep exploring.
@@ -285,7 +296,8 @@ export function ClickTest() {
   const submitImpression = () => {
     answer('first-impression', impression.trim());
     void flush();
-    setPhase('brief');
+    // The overview counts scenarios, so it's skipped when there are none (the sample task, for one).
+    setPhase(scenarioIds.length ? 'overview' : 'brief');
   };
 
   const nextTask = () => {
@@ -527,6 +539,33 @@ export function ClickTest() {
           </>
         )}
       </Screen>
+    );
+  }
+
+  // Before the first scenario: how many scenarios there are and how many tasks each one has.
+  if (phase === 'overview') {
+    return (
+      <div className={styles.stage}>
+        <div className={styles.frame} data-locked>
+          <NavShell config={CONFIG} initialPage="home" />
+        </div>
+        <div className={styles.scrim} data-harness />
+        <aside className={styles.panel} data-harness data-phase="brief" aria-live="polite">
+          <p className={styles.task}>
+            You have {scenarioIds.length} {scenarioIds.length === 1 ? 'scenario' : 'scenarios'} coming up.
+          </p>
+          <p className={styles.confirm}>
+            Each scenario is a short situation, followed by{' '}
+            {taskRange[0] === taskRange[1] ? taskRange[0] : `${taskRange[0]} to ${taskRange[1]}`}{' '}
+            {taskRange[1] === 1 ? 'task' : 'tasks'}.
+          </p>
+          <div className={styles.actions}>
+            <Button variant="primary" onPress={() => setPhase('brief')}>
+              Continue
+            </Button>
+          </div>
+        </aside>
+      </div>
     );
   }
 
