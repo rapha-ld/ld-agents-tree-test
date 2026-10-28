@@ -1,0 +1,122 @@
+/*
+ * #151 "Optically balanced" icon sizes. Every LaunchPad icon renders in the same
+ * 16px box, but the glyphs inside are drawn at different sizes — `add` fills
+ * 13px of its 20px grid, the star 18px. This scales each glyph so they read at
+ * about the same size.
+ *
+ * Method: each glyph's drawn bounds on the 20px grid were measured in the
+ * browser (sprite icons) or taken from the Figma conversion (localIcons.ts).
+ * Optical size = the mean of the longer side and the square root of the area,
+ * so wide/short glyphs (pulse) and tall/narrow ones (flask) both count fairly.
+ * Each icon scales to the median (16.2), clamped to 0.88–1.15 so nothing
+ * changes by more than about a pixel and a half. Icons within ±0.5% are left
+ * alone; the chevron is left alone because it's an affordance, not a glyph.
+ *
+ * Bounds can't see visual weight: Home and the ruler have nearly the same
+ * bounds, but Home's solid shape still reads heavier. That needs a redraw, not
+ * a scale.
+ *
+ * Global (not a CSS module) so it reaches the icons inside LaunchPad's
+ * IconButtons by their public `data-icon`. Only applies under
+ * `data-icon-size="balanced"`, which NavShell sets on the frame.
+ */
+
+[data-icon-size='balanced'] svg[data-icon='add'] {
+  scale: 1.15;
+}
+
+[data-icon-size='balanced'] svg[data-icon='bullhorn'] {
+  scale: 1.009;
+}
+
+[data-icon-size='balanced'] svg[data-icon='flag'] {
+  scale: 1.062;
+}
+
+[data-icon-size='balanced'] svg[data-icon='flag-outline'] {
+  scale: 1.062;
+}
+
+[data-icon-size='balanced'] svg[data-icon='flask'] {
+  scale: 1.069;
+}
+
+[data-icon-size='balanced'] svg[data-icon='flask-filled'] {
+  scale: 1.057;
+}
+
+[data-icon-size='balanced'] svg[data-icon='flask-outline'] {
+  scale: 1.069;
+}
+
+[data-icon-size='balanced'] svg[data-icon='gear-outline'] {
+  scale: 0.993;
+}
+
+[data-icon-size='balanced'] svg[data-icon='graph-filled'] {
+  scale: 1.081;
+}
+
+[data-icon-size='balanced'] svg[data-icon='graph-outline'] {
+  scale: 1.094;
+}
+
+[data-icon-size='balanced'] svg[data-icon='group'] {
+  scale: 0.973;
+}
+
+[data-icon-size='balanced'] svg[data-icon='group-outline'] {
+  scale: 0.973;
+}
+
+[data-icon-size='balanced'] svg[data-icon='help-circle-outline'] {
+  scale: 0.983;
+}
+
+[data-icon-size='balanced'] svg[data-icon='home'] {
+  scale: 0.983;
+}
+
+[data-icon-size='balanced'] svg[data-icon='inbox-outline'] {
+  scale: 1.094;
+}
+
+[data-icon-size='balanced'] svg[data-icon='plug-connect-outline'] {
+  scale: 0.984;
+}
+
+[data-icon-size='balanced'] svg[data-icon='pulse'] {
+  scale: 1.071;
+}
+
+[data-icon-size='balanced'] svg[data-icon='lp-robot-filled'] {
+  scale: 1.101;
+}
+
+[data-icon-size='balanced'] svg[data-icon='robot'] {
+  scale: 1.101;
+}
+
+[data-icon-size='balanced'] svg[data-icon='ruler'] {
+  scale: 0.983;
+}
+
+[data-icon-size='balanced'] svg[data-icon='search'] {
+  scale: 0.982;
+}
+
+[data-icon-size='balanced'] svg[data-icon='sidebar-left-collapse'] {
+  scale: 1.094;
+}
+
+[data-icon-size='balanced'] svg[data-icon='sidebar-left-expand'] {
+  scale: 1.094;
+}
+
+[data-icon-size='balanced'] svg[data-icon='star'] {
+  scale: 0.904;
+}
+
+[data-icon-size='balanced'] svg[data-icon='star-outline'] {
+  scale: 0.904;
+}

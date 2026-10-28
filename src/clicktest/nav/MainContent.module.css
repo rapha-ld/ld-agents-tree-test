@@ -1,0 +1,81 @@
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--lp-color-bg-ui-primary);
+}
+
+/* Header over the scrolling content. In the continuous shell, the white card. */
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrolls under the header. */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* One line under the header saying what the page is for. */
+.subtitle {
+  margin: 0 0 var(--lp-size-16);
+  padding-inline: var(--lp-spacing-500);
+  font: var(--lp-text-body-1-regular);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+/* The continuous shell's top bar: only there, and empty for now, so just a
+   strip of grey above the card. */
+.topBar {
+  display: none;
+}
+
+/* Continuous shell: the nav and the top bar are one grey surface, and the
+   page, header and all, is a card inset into it (Sruthy's .app.shell .main). */
+:global([data-continuous]) .main {
+  background: transparent;
+}
+
+:global([data-continuous]) .topBar {
+  display: block;
+  flex: none;
+  height: var(--lp-spacing-300);
+}
+
+:global([data-continuous]) .page {
+  margin: 0 var(--lp-spacing-300) var(--lp-spacing-300) 0;
+  overflow: hidden;
+  border-radius: var(--lp-border-radius-large);
+  background: var(--lp-color-bg-ui-primary);
+  box-shadow: 0 0 0 var(--lp-size-1) var(--lp-color-border-ui-primary);
+}
+
+/* Each page's content fades in, with a small rise, as if it had just loaded. */
+@keyframes arrive {
+  from {
+    opacity: 0;
+    translate: 0 var(--lp-size-4);
+  }
+}
+
+.content {
+  animation: arrive var(--lp-duration-300) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* No rise, only the fade, for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes arriveFade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .content {
+    animation-name: arriveFade;
+  }
+}
