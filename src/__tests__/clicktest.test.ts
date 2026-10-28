@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { collapseRepeats, scoreTask } from '../clicktest/harness/score';
 import { parseTasks } from '../clicktest/harness/parseTasks';
 import { cohortOf } from '../clicktest/harness/cohort';
+import { isAlreadySaved } from '../clicktest/harness/store';
 import { TrailTracker } from '../clicktest/harness/trail';
 import type { CtEvent, Task } from '../clicktest/harness/types';
 import { DESTINATIONS, PAGE_SUBTITLE, SECTIONS } from '../clicktest/nav/data';
@@ -295,5 +296,13 @@ describe('cohortOf', () => {
     expect(cohortOf('PILOT-ux-kristi')).toBe('pilot');
     expect(cohortOf('ui-48213')).toBe('main');
     expect(cohortOf(null)).toBe('main');
+  });
+});
+
+describe('isAlreadySaved', () => {
+  it('treats a duplicate-key refusal as saved and anything else as a failure', () => {
+    expect(isAlreadySaved({ code: '23505', message: 'duplicate key' })).toBe(true);
+    expect(isAlreadySaved({ code: '42501', message: 'permission denied' })).toBe(false);
+    expect(isAlreadySaved(new Error('Failed to fetch'))).toBe(false);
   });
 });
