@@ -101,11 +101,17 @@ export async function saveEvents(events: CtEvent[]): Promise<SaveResult> {
   store.events.push(...events);
   writeLocal(sessionId, store);
   if (!client) return { remote: 'skipped' };
-  // A retry after a lost response must not insert the batch twice; (session_id, seq) is unique.
-  const { error } = await withRetry(() =>
-    client.from('ct_events').upsert(events, { onConflict: 'session_id,seq', ignoreDuplicates: true }),
-  );
-  return error ? { remote: 'failed', error: describe(error) } : { remote: 'ok' };
+  // A plain insert: an upsert's ON CONFLICT needs select on the table, which anon doesn't have, so
+  // every batch would fail (see saveSession in src/session.ts). (session_id, seq) is unique, so a
+  // retry after a lost response is refused as a duplicate, which means the batch is already saved.
+  // Batches never overlap (flush hands each event over once), so a 23505 can only be a full resend.
+  const { error } = await withRetry(() => client.from('ct_events').insert(events));
+  return error && !isAlreadySaved(error) ? { remote: 'failed', error: describe(error) } : { remote: 'ok' };
+}
+
+/** Postgres refuses a row that breaks a unique key with SQLSTATE 23505. */
+export function isAlreadySaved(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: unknown }).code === '23505';
 }
 
 /** This session's copy, for the download button shown when a write failed. */

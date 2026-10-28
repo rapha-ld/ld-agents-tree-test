@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { collapseRepeats, scoreTask } from '../clicktest/harness/score';
 import { parseTasks } from '../clicktest/harness/parseTasks';
+import { isAlreadySaved } from '../clicktest/harness/store';
 import { TrailTracker } from '../clicktest/harness/trail';
 import type { CtEvent, Task } from '../clicktest/harness/types';
 import { DESTINATIONS, PAGE_SUBTITLE, SECTIONS } from '../clicktest/nav/data';
@@ -284,5 +285,13 @@ describe('page subtitles', () => {
   it.each(Object.entries(PAGE_SUBTITLE))('%s shares no word with any task or scenario', (_page, line) => {
     const clashes = words(line).filter((w) => banned.has(stem(w)) || banned.has(w));
     expect(clashes).toEqual([]);
+  });
+});
+
+describe('isAlreadySaved', () => {
+  it('treats a duplicate-key refusal as saved and anything else as a failure', () => {
+    expect(isAlreadySaved({ code: '23505', message: 'duplicate key' })).toBe(true);
+    expect(isAlreadySaved({ code: '42501', message: 'permission denied' })).toBe(false);
+    expect(isAlreadySaved(new Error('Failed to fetch'))).toBe(false);
   });
 });
