@@ -59,7 +59,8 @@ first_impression:
   question: "What do you think you can do with this product?"
 
 # Asked after every task. A rating at or below `probe.at_or_below` adds the
-# optional probe question.
+# optional probe question. After "I give up" there's no rating: only the
+# optional `gave_up` question.
 follow_up:
   question: "How confident are you that you picked the right page?"
   low: "Not at all confident"
@@ -67,6 +68,7 @@ follow_up:
   probe:
     at_or_below: 4
     question: "What made you unsure?"
+  gave_up: "What made you give up?"
 
 tasks: []
 

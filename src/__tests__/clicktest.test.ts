@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { collapseRepeats, scoreTask } from '../clicktest/harness/score';
 import { parseTasks } from '../clicktest/harness/parseTasks';
+import { cohortOf } from '../clicktest/harness/cohort';
 import { isAlreadySaved } from '../clicktest/harness/store';
 import { TrailTracker } from '../clicktest/harness/trail';
 import type { CtEvent, Task } from '../clicktest/harness/types';
@@ -285,6 +286,16 @@ describe('page subtitles', () => {
   it.each(Object.entries(PAGE_SUBTITLE))('%s shares no word with any task or scenario', (_page, line) => {
     const clashes = words(line).filter((w) => banned.has(stem(w)) || banned.has(w));
     expect(clashes).toEqual([]);
+  });
+});
+
+describe('cohortOf', () => {
+  it('reads trial, pilot and main runs from the pid', () => {
+    expect(cohortOf('TEST-sruthy')).toBe('trial');
+    expect(cohortOf('discard-probe')).toBe('trial');
+    expect(cohortOf('PILOT-ux-kristi')).toBe('pilot');
+    expect(cohortOf('ui-48213')).toBe('main');
+    expect(cohortOf(null)).toBe('main');
   });
 });
 

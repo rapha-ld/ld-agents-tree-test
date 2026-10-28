@@ -107,6 +107,8 @@ export function ClickTest() {
   const [lookLeft, setLookLeft] = useState(FIRST_IMPRESSION?.seconds ?? 0);
   const [rating, setRating] = useState<number | null>(null);
   const [unsure, setUnsure] = useState('');
+  // After "I give up" there's nothing to rate, so the follow-up asks why instead.
+  const [gaveUp, setGaveUp] = useState(false);
   const [checked, setChecked] = useState<Record<string, string[]>>({});
   const [grid, setGrid] = useState<Record<string, Record<string, string>>>({});
   const [openAnswers, setOpenAnswers] = useState<Record<string, string>>({});
@@ -317,10 +319,12 @@ export function ClickTest() {
   const probing = !!FOLLOW_UP?.probe && rating !== null && rating <= FOLLOW_UP.probe.at_or_below;
 
   const submitRating = () => {
-    if (task && rating) answer('confidence', rating, task.id);
-    if (task && probing && unsure.trim()) answer('unsure-why', unsure.trim(), task.id);
+    if (task && rating && !gaveUp) answer('confidence', rating, task.id);
+    if (task && probing && !gaveUp && unsure.trim()) answer('unsure-why', unsure.trim(), task.id);
+    if (task && gaveUp && unsure.trim()) answer('giveup-why', unsure.trim(), task.id);
     setRating(null);
     setUnsure('');
+    setGaveUp(false);
     setTimedOut(false);
     nextTask();
   };
@@ -373,6 +377,7 @@ export function ClickTest() {
     );
     void flush();
     if (kind === 'timeout') setTimedOut(true);
+    setGaveUp(kind === 'giveup' && !!FOLLOW_UP?.gave_up);
     if (FOLLOW_UP) setPhase('rating');
     else nextTask();
   }
@@ -620,43 +625,53 @@ export function ClickTest() {
       {phase === 'rating' && FOLLOW_UP ? (
         <aside className={styles.panel} data-harness data-phase="brief" aria-live="polite">
           {timedOut && <p className={styles.timedOut}>Time ran out on that task.</p>}
-          {/* No value until they touch it, so the thumb's resting place can't nudge the answer. */}
-          <Slider
-            minValue={1}
-            maxValue={7}
-            step={1}
-            value={rating ?? 4}
-            onChange={(v) => setRating(v as number)}
-            // onChange skips a press on the resting value (4); onChangeEnd still fires for it.
-            onChangeEnd={(v) => setRating(v as number)}
-            className={styles.rating}
-            data-unset={rating === null || undefined}
-          >
-            <Label className={styles.question}>{FOLLOW_UP.question}</Label>
-            <SliderTrack className={styles.ratingTrack}>
-              <SliderThumb className={styles.ratingThumb} />
-            </SliderTrack>
-            <div className={styles.ratingTicks} aria-hidden>
-              {/* Pointer shortcut: pressing a number picks it. The slider itself handles the keyboard. */}
-              {SCALE.map((n) => (
-                <span key={n} data-picked={rating === n || undefined} onClick={() => setRating(n)}>
-                  {n}
-                </span>
-              ))}
-            </div>
-            <div className={styles.scaleEnds} aria-hidden>
-              <span>{FOLLOW_UP.low}</span>
-              <span>{FOLLOW_UP.high}</span>
-            </div>
-          </Slider>
-          {probing && FOLLOW_UP.probe && (
-            <TextField value={unsure} onChange={setUnsure} className={styles.field}>
-              <Label className={styles.question}>{FOLLOW_UP.probe.question} (optional)</Label>
+          {gaveUp && FOLLOW_UP.gave_up && (
+            <TextField value={unsure} onChange={setUnsure} autoFocus className={styles.field}>
+              <Label className={styles.question}>{FOLLOW_UP.gave_up} (optional)</Label>
               <TextArea rows={3} />
             </TextField>
           )}
+          {!gaveUp && (
+            <>
+              {/* No value until they touch it, so the thumb's resting place can't nudge the answer. */}
+              <Slider
+                minValue={1}
+                maxValue={7}
+                step={1}
+                value={rating ?? 4}
+                onChange={(v) => setRating(v as number)}
+                // onChange skips a press on the resting value (4); onChangeEnd still fires for it.
+                onChangeEnd={(v) => setRating(v as number)}
+                className={styles.rating}
+                data-unset={rating === null || undefined}
+              >
+                <Label className={styles.question}>{FOLLOW_UP.question}</Label>
+                <SliderTrack className={styles.ratingTrack}>
+                  <SliderThumb className={styles.ratingThumb} />
+                </SliderTrack>
+                <div className={styles.ratingTicks} aria-hidden>
+                  {/* Pointer shortcut: pressing a number picks it. The slider itself handles the keyboard. */}
+                  {SCALE.map((n) => (
+                    <span key={n} data-picked={rating === n || undefined} onClick={() => setRating(n)}>
+                      {n}
+                    </span>
+                  ))}
+                </div>
+                <div className={styles.scaleEnds} aria-hidden>
+                  <span>{FOLLOW_UP.low}</span>
+                  <span>{FOLLOW_UP.high}</span>
+                </div>
+              </Slider>
+              {probing && FOLLOW_UP.probe && (
+                <TextField value={unsure} onChange={setUnsure} className={styles.field}>
+                  <Label className={styles.question}>{FOLLOW_UP.probe.question} (optional)</Label>
+                  <TextArea rows={3} />
+                </TextField>
+              )}
+            </>
+          )}
           <div className={styles.actions}>
-            <Button variant="primary" isDisabled={!rating} onPress={submitRating}>
+            <Button variant="primary" isDisabled={!gaveUp && !rating} onPress={submitRating}>
               Next
             </Button>
           </div>

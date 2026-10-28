@@ -43,6 +43,8 @@ export interface FollowUp {
   low: string;
   high: string;
   probe?: { at_or_below: number; question: string };
+  /** Asked in place of the rating after "I give up". */
+  gave_up?: string;
 }
 
 /**
