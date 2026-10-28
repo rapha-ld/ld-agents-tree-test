@@ -83,7 +83,7 @@ export type SchemeOutcome = {
   scenarioOutcomes: ScenarioOutcome[];
 };
 
-function median(values: number[]): number | null {
+export function median(values: number[]): number | null {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
