@@ -59,6 +59,14 @@ const SRC = params.get('src');
 const USE_SAMPLE = params.get('sample') === '1';
 const DEV = params.get('dev') === '1';
 
+// Participants from User Interviews arrive with src=userinterviews and their tracking id as the pid.
+// Sending them to this URL at the end marks them Submitted in User Interviews.
+const RETURN_URL =
+  SRC === 'userinterviews' && PID
+    ? `https://www.userinterviews.com/project-task-events/custom_link_with_redirect/complete?iid=${encodeURIComponent(PID)}`
+    : null;
+const RETURN_DELAY_MS = 3000;
+
 type Phase =
   | 'blocked'
   | 'closed'
@@ -337,11 +345,25 @@ export function ClickTest() {
     nextTask();
   };
 
+  const [saved, setSaved] = useState(false);
+  // Only a real failed write counts; a build with no database (local runs) keeps answers in the browser by design.
+  const saveFailed = !!dbProblem && persistenceMode === 'supabase';
   const endStudy = () => {
-    void flush();
     setPhase('done');
-    void saveSession(session(new Date().toISOString())).then(noteSave);
+    // The last events and the finish time are written before anyone is sent back to User Interviews.
+    // A write that throws counts as a failed save, so the screen offers the download and doesn't redirect.
+    void Promise.all([flush(), saveSession(session(new Date().toISOString())).then(noteSave)])
+      .catch(() => setDbProblem('The answers could not be saved.'))
+      .finally(() => setSaved(true));
   };
+
+  // Back to User Interviews a few seconds after the thank-you appears, once everything is saved. Not
+  // when a save failed: they need this screen to download their answers.
+  useEffect(() => {
+    if (phase !== 'done' || !RETURN_URL || !saved || saveFailed) return;
+    const timer = window.setTimeout(() => window.location.assign(RETURN_URL), RETURN_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [phase, saved, saveFailed]);
 
   // Every grid row needs an answer; checkboxes and open text can be left empty.
   const wrapUpComplete = WRAP_UP.every((q) => !q.columns || (q.options ?? []).every((o) => grid[q.id]?.[o]));
@@ -469,7 +491,7 @@ export function ClickTest() {
           <Label>Your name</Label>
           <Input />
         </TextField>
-        {dbProblem && persistenceMode === 'supabase' && (
+        {saveFailed && (
           <p className={styles.warning}>The connection is unstable. Your answers are saved in this browser for now.</p>
         )}
         <div className={styles.actions}>
@@ -481,19 +503,26 @@ export function ClickTest() {
     );
   }
 
+  // The question after the first look, as a card over the nav like the others.
   if (phase === 'impression' && FIRST_IMPRESSION) {
     return (
-      <Screen>
-        <TextField value={impression} onChange={setImpression} isRequired autoFocus className={styles.field}>
-          <Label className={styles.question}>{FIRST_IMPRESSION.question}</Label>
-          <TextArea rows={4} />
-        </TextField>
-        <div className={styles.actions}>
-          <Button variant="primary" isDisabled={!impression.trim()} onPress={submitImpression}>
-            Next
-          </Button>
+      <div className={styles.stage}>
+        <div className={styles.frame} data-locked>
+          <NavShell config={CONFIG} initialPage="home" />
         </div>
-      </Screen>
+        <div className={styles.scrim} data-harness />
+        <aside className={styles.panel} data-harness>
+          <TextField value={impression} onChange={setImpression} isRequired autoFocus className={styles.field}>
+            <Label className={styles.question}>{FIRST_IMPRESSION.question}</Label>
+            <TextArea rows={4} />
+          </TextField>
+          <div className={styles.actions}>
+            <Button variant="primary" isDisabled={!impression.trim()} onPress={submitImpression}>
+              Next
+            </Button>
+          </div>
+        </aside>
+      </div>
     );
   }
 
@@ -567,8 +596,18 @@ export function ClickTest() {
       <Screen>
         <h1>Thank you</h1>
         <p>Thanks for participating. Your answers help us improve our designs.</p>
+        {RETURN_URL && (
+          <>
+            {!saveFailed && <p className={styles.consent}>Taking you back to User Interviews to finish up.</p>}
+            <div className={styles.actions}>
+              <Button variant={saveFailed ? 'default' : 'primary'} onPress={() => window.location.assign(RETURN_URL)}>
+                Return to User Interviews
+              </Button>
+            </div>
+          </>
+        )}
         {/* A write that failed after the intro would otherwise leave the answers only in this browser. */}
-        {dbProblem && persistenceMode === 'supabase' && (
+        {saveFailed && (
           <>
             <p className={styles.warning}>
               Some of your answers didn't reach us. Download them and send the file to the person who invited you.
@@ -592,7 +631,7 @@ export function ClickTest() {
           <NavShell config={CONFIG} initialPage="home" />
         </div>
         <div className={styles.scrim} data-harness />
-        <aside className={styles.panel} data-harness data-phase="brief" aria-live="polite">
+        <aside className={styles.panel} data-harness aria-live="polite">
           <p className={styles.task}>
             You have {scenarioIds.length} {scenarioIds.length === 1 ? 'scenario' : 'scenarios'} coming up.
           </p>
@@ -625,12 +664,7 @@ export function ClickTest() {
           <div className={styles.spotlightWash} style={{ left: navEdge }} aria-hidden data-harness />
         )}
         {phase === 'look-brief' && <div className={styles.scrim} data-harness />}
-        <aside
-          className={styles.panel}
-          data-harness
-          data-phase={phase === 'look-brief' ? 'brief' : 'active'}
-          aria-live="polite"
-        >
+        <aside className={styles.panel} data-harness aria-live="polite">
           <p className={styles.task}>{FIRST_IMPRESSION.look}</p>
           {phase === 'look-brief' ? (
             <div className={styles.actions}>
@@ -662,19 +696,12 @@ export function ClickTest() {
 
       {phase !== 'active' && <div className={styles.scrim} data-harness />}
 
-      {/* Until the first pick, an arrow points from the task card to the nav, so eyes go there first. */}
-      {phase === 'active' && !selection && (
-        <svg className={styles.navArrow} viewBox="0 0 88 56" aria-hidden data-harness>
-          <path d="M0 28 L34 0 V16 H88 V40 H34 V56 Z" />
-        </svg>
-      )}
-
       {ripples.map((r) => (
         <span key={r.id} className={styles.ripple} style={{ left: r.x, top: r.y }} aria-hidden />
       ))}
 
       {phase === 'rating' && FOLLOW_UP ? (
-        <aside className={styles.panel} data-harness data-phase="brief" aria-live="polite">
+        <aside className={styles.panel} data-harness aria-live="polite">
           {timedOut && <p className={styles.timedOut}>Time ran out on that task.</p>}
           {gaveUp && FOLLOW_UP.gave_up && (
             <TextField value={unsure} onChange={setUnsure} autoFocus className={styles.field}>
@@ -728,7 +755,7 @@ export function ClickTest() {
           </div>
         </aside>
       ) : (
-        <aside className={styles.panel} data-harness data-phase={phase} aria-live="polite">
+        <aside className={styles.panel} data-harness aria-live="polite">
           {phase === 'brief' && task.scenario ? (
             <>
               <p className={styles.counter}>

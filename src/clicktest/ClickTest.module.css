@@ -160,58 +160,28 @@
   z-index: 900;
 }
 
-/* A short, solid arrow just right of the nav, at the task card's height, nudging toward the nav. */
-.navArrow {
-  position: fixed;
-  left: 276px;
-  bottom: 112px;
-  width: 88px;
-  height: 56px;
-  pointer-events: none;
-  z-index: 999;
-  animation: nudge 1.4s ease-in-out infinite;
-}
-
-.navArrow path {
-  fill: var(--lp-color-border-interactive-focus, #405bff);
-}
-
-@keyframes nudge {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-16px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .navArrow { animation: none; }
-}
-
 .scrim {
   position: absolute;
   inset: 0;
   background: rgb(0 0 0 / 0.25);
 }
 
+/* Every card sits in the middle of the screen, like a modal, so there's one place to look. */
 .panel {
   position: fixed;
-  right: var(--lp-size-24);
-  bottom: var(--lp-size-24);
-  width: 520px;
-  padding: var(--lp-size-24) var(--lp-size-28, 28px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 560px;
+  max-height: calc(100vh - var(--lp-size-48, 48px));
+  overflow-y: auto;
+  padding: var(--lp-size-32);
   border-radius: var(--lp-border-radius-medium);
   background: var(--lp-color-bg-ui-primary);
   box-shadow: 0 8px 28px rgb(0 0 0 / 0.18);
   font: var(--lp-text-body-1-regular);
   color: var(--lp-color-text-ui-primary);
   z-index: 1000;
-}
-
-.panel[data-phase='brief'] {
-  top: 50%;
-  right: 50%;
-  bottom: auto;
-  transform: translate(50%, -50%);
-  width: 560px;
-  padding: var(--lp-size-32);
 }
 
 .counter {
