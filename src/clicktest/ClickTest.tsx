@@ -787,11 +787,10 @@ export function ClickTest() {
                 </p>
               )}
               <div className={styles.actions}>
-                {selection && (
-                  <Button variant="primary" onPress={() => finish('found')}>
-                    Confirm
-                  </Button>
-                )}
+                {/* There from the start, so nothing jumps; it turns on with the first pick. */}
+                <Button variant="primary" isDisabled={!selection} onPress={() => finish('found')}>
+                  Confirm
+                </Button>
                 <Button variant="minimal" onPress={() => finish('giveup')}>
                   I give up
                 </Button>
