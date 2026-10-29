@@ -48,6 +48,7 @@ export function Sidebar({
     // face from anything inside a <nav>.
     <div
       className={styles.sidebar}
+      data-marker="sidebar"
       data-leaf={config.leaf}
       data-header-size={config.headerSize}
       data-guide-scope={config.guideScope}
