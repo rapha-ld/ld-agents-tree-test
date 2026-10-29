@@ -229,6 +229,14 @@ export function ClickTest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, task, record]);
 
+  // Where the nav ends, so the first look's dark wash covers only the page beside it.
+  const [navEdge, setNavEdge] = useState(256);
+  useEffect(() => {
+    if (phase !== 'look') return;
+    const edge = document.querySelector('[data-marker="sidebar"]')?.getBoundingClientRect().right;
+    if (edge) setNavEdge(edge);
+  }, [phase]);
+
   // The first look: every section open while the countdown runs, then the question replaces it.
   // Presses are swallowed so nothing opens or closes, but scrolling still works, so the sections
   // below the fold can be seen.
@@ -613,6 +621,9 @@ export function ClickTest() {
         >
           <NavShell config={CONFIG} initialPage="home" />
         </div>
+        {phase === 'look' && (
+          <div className={styles.spotlightWash} style={{ left: navEdge }} aria-hidden data-harness />
+        )}
         {phase === 'look-brief' && <div className={styles.scrim} data-harness />}
         <aside
           className={styles.panel}
@@ -653,9 +664,8 @@ export function ClickTest() {
 
       {/* Until the first pick, an arrow points from the task card to the nav, so eyes go there first. */}
       {phase === 'active' && !selection && (
-        <svg className={styles.navArrow} viewBox="0 0 400 40" preserveAspectRatio="none" aria-hidden data-harness>
-          <path d="M392 20 H18" />
-          <path d="M34 6 L14 20 L34 34" />
+        <svg className={styles.navArrow} viewBox="0 0 88 56" aria-hidden data-harness>
+          <path d="M0 28 L34 0 V16 H88 V40 H34 V56 Z" />
         </svg>
       )}
 
