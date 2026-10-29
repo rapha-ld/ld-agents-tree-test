@@ -503,19 +503,26 @@ export function ClickTest() {
     );
   }
 
+  // The question after the first look, as a card over the nav like the others.
   if (phase === 'impression' && FIRST_IMPRESSION) {
     return (
-      <Screen>
-        <TextField value={impression} onChange={setImpression} isRequired autoFocus className={styles.field}>
-          <Label className={styles.question}>{FIRST_IMPRESSION.question}</Label>
-          <TextArea rows={4} />
-        </TextField>
-        <div className={styles.actions}>
-          <Button variant="primary" isDisabled={!impression.trim()} onPress={submitImpression}>
-            Next
-          </Button>
+      <div className={styles.stage}>
+        <div className={styles.frame} data-locked>
+          <NavShell config={CONFIG} initialPage="home" />
         </div>
-      </Screen>
+        <div className={styles.scrim} data-harness />
+        <aside className={styles.panel} data-harness data-phase="brief">
+          <TextField value={impression} onChange={setImpression} isRequired autoFocus className={styles.field}>
+            <Label className={styles.question}>{FIRST_IMPRESSION.question}</Label>
+            <TextArea rows={4} />
+          </TextField>
+          <div className={styles.actions}>
+            <Button variant="primary" isDisabled={!impression.trim()} onPress={submitImpression}>
+              Next
+            </Button>
+          </div>
+        </aside>
+      </div>
     );
   }
 
@@ -693,13 +700,6 @@ export function ClickTest() {
       </div>
 
       {phase !== 'active' && <div className={styles.scrim} data-harness />}
-
-      {/* Until the first pick, an arrow points from the task card to the nav, so eyes go there first. */}
-      {phase === 'active' && !selection && (
-        <svg className={styles.navArrow} viewBox="0 0 88 56" aria-hidden data-harness>
-          <path d="M0 28 L34 0 V16 H88 V40 H34 V56 Z" />
-        </svg>
-      )}
 
       {ripples.map((r) => (
         <span key={r.id} className={styles.ripple} style={{ left: r.x, top: r.y }} aria-hidden />
