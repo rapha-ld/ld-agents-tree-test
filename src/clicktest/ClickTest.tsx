@@ -382,6 +382,35 @@ export function ClickTest() {
     else nextTask();
   }
 
+  // Return presses the screen's main button, from a text box too (Shift+Return adds a line there).
+  // Keys inside the nav are left alone, so its menus and search still take Return.
+  const submitOnReturn = useRef<() => void>(() => {});
+  submitOnReturn.current = () => {
+    if (phase === 'intro' && trimmedName) void beginStudy();
+    else if (phase === 'look-brief') setPhase('look');
+    else if (phase === 'impression' && impression.trim()) submitImpression();
+    else if (phase === 'overview') setPhase('brief');
+    else if (phase === 'brief') startTask();
+    else if (phase === 'active' && selection) finish('found');
+    else if (phase === 'rating' && (gaveUp || rating !== null)) submitRating();
+    else if (phase === 'wrapup' && wrapUpComplete) submitWrapUp();
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // A held key repeats; only the first press counts, so holding Return can't skip through screens.
+      if (e.key !== 'Enter' || e.repeat || e.shiftKey || e.isComposing || e.defaultPrevented) return;
+      const target = e.target instanceof Element ? e.target : null;
+      const inText = !!target?.closest('textarea, input[type="text"], input:not([type])');
+      const onControl = !!target?.closest('button, a, [role="button"], [role="menuitem"], [role="radio"], input');
+      const inNav = !!target && target !== document.body && !target.closest('[data-harness]');
+      if (inNav || (onControl && !inText)) return;
+      e.preventDefault();
+      submitOnReturn.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   if (phase === 'blocked') {
     return (
       <Screen>
@@ -577,7 +606,11 @@ export function ClickTest() {
   if ((phase === 'look-brief' || phase === 'look') && FIRST_IMPRESSION) {
     return (
       <div className={styles.stage}>
-        <div className={styles.frame} data-locked={phase === 'look-brief' || undefined}>
+        <div
+          className={styles.frame}
+          data-locked={phase === 'look-brief' || undefined}
+          data-spotlight={phase === 'look' || undefined}
+        >
           <NavShell config={CONFIG} initialPage="home" />
         </div>
         {phase === 'look-brief' && <div className={styles.scrim} data-harness />}
@@ -617,6 +650,14 @@ export function ClickTest() {
       </div>
 
       {phase !== 'active' && <div className={styles.scrim} data-harness />}
+
+      {/* Until the first pick, an arrow points from the task card to the nav, so eyes go there first. */}
+      {phase === 'active' && !selection && (
+        <svg className={styles.navArrow} viewBox="0 0 400 40" preserveAspectRatio="none" aria-hidden data-harness>
+          <path d="M392 20 H18" />
+          <path d="M34 6 L14 20 L34 34" />
+        </svg>
+      )}
 
       {ripples.map((r) => (
         <span key={r.id} className={styles.ripple} style={{ left: r.x, top: r.y }} aria-hidden />
