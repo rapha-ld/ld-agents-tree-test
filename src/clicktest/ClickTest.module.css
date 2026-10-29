@@ -142,6 +142,49 @@
   color: var(--lp-color-text-ui-primary);
 }
 
+/* The first look: a spotlight. The page blurs under a dark wash that starts at the nav's edge
+   (.spotlightWash), and the nav gets an outline. The look card sits above the wash. */
+.frame[data-spotlight] :global(main) {
+  filter: blur(3px);
+}
+
+.frame[data-spotlight] :global([data-marker='sidebar']) {
+  box-shadow: inset 0 0 0 3px var(--lp-color-border-interactive-focus, #405bff);
+}
+
+.spotlightWash {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.62);
+  pointer-events: none;
+  z-index: 900;
+}
+
+/* A short, solid arrow just right of the nav, at the task card's height, nudging toward the nav. */
+.navArrow {
+  position: fixed;
+  left: 276px;
+  bottom: 112px;
+  width: 88px;
+  height: 56px;
+  pointer-events: none;
+  z-index: 999;
+  animation: nudge 1.4s ease-in-out infinite;
+}
+
+.navArrow path {
+  fill: var(--lp-color-border-interactive-focus, #405bff);
+}
+
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-16px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navArrow { animation: none; }
+}
+
 .scrim {
   position: absolute;
   inset: 0;

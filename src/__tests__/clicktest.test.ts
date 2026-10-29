@@ -160,7 +160,7 @@ describe('clicktest/tasks.yaml', () => {
   it('has 11 tasks across 5 scenarios, with the first impression and wrap-up set', () => {
     expect(file.tasks).toHaveLength(11);
     expect(new Set(file.tasks.map((t) => t.scenario?.id)).size).toBe(5);
-    expect(file.first_impression?.seconds).toBe(10);
+    expect(file.first_impression?.seconds).toBe(30);
     expect(file.wrap_up?.map((q) => q.id)).toEqual(['can-do']);
     expect(file.follow_up?.probe?.at_or_below).toBe(4);
   });

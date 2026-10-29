@@ -229,6 +229,14 @@ export function ClickTest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, task, record]);
 
+  // Where the nav ends, so the first look's dark wash covers only the page beside it.
+  const [navEdge, setNavEdge] = useState(256);
+  useEffect(() => {
+    if (phase !== 'look') return;
+    const edge = document.querySelector('[data-marker="sidebar"]')?.getBoundingClientRect().right;
+    if (edge) setNavEdge(edge);
+  }, [phase]);
+
   // The first look: every section open while the countdown runs, then the question replaces it.
   // Presses are swallowed so nothing opens or closes, but scrolling still works, so the sections
   // below the fold can be seen.
@@ -381,6 +389,35 @@ export function ClickTest() {
     if (FOLLOW_UP) setPhase('rating');
     else nextTask();
   }
+
+  // Return presses the screen's main button, from a text box too (Shift+Return adds a line there).
+  // Keys inside the nav are left alone, so its menus and search still take Return.
+  const submitOnReturn = useRef<() => void>(() => {});
+  submitOnReturn.current = () => {
+    if (phase === 'intro' && trimmedName) void beginStudy();
+    else if (phase === 'look-brief') setPhase('look');
+    else if (phase === 'impression' && impression.trim()) submitImpression();
+    else if (phase === 'overview') setPhase('brief');
+    else if (phase === 'brief') startTask();
+    else if (phase === 'active' && selection) finish('found');
+    else if (phase === 'rating' && (gaveUp || rating !== null)) submitRating();
+    else if (phase === 'wrapup' && wrapUpComplete) submitWrapUp();
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // A held key repeats; only the first press counts, so holding Return can't skip through screens.
+      if (e.key !== 'Enter' || e.repeat || e.shiftKey || e.isComposing || e.defaultPrevented) return;
+      const target = e.target instanceof Element ? e.target : null;
+      const inText = !!target?.closest('textarea, input[type="text"], input:not([type])');
+      const onControl = !!target?.closest('button, a, [role="button"], [role="menuitem"], [role="radio"], input');
+      const inNav = !!target && target !== document.body && !target.closest('[data-harness]');
+      if (inNav || (onControl && !inText)) return;
+      e.preventDefault();
+      submitOnReturn.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   if (phase === 'blocked') {
     return (
@@ -577,9 +614,16 @@ export function ClickTest() {
   if ((phase === 'look-brief' || phase === 'look') && FIRST_IMPRESSION) {
     return (
       <div className={styles.stage}>
-        <div className={styles.frame} data-locked={phase === 'look-brief' || undefined}>
+        <div
+          className={styles.frame}
+          data-locked={phase === 'look-brief' || undefined}
+          data-spotlight={phase === 'look' || undefined}
+        >
           <NavShell config={CONFIG} initialPage="home" />
         </div>
+        {phase === 'look' && (
+          <div className={styles.spotlightWash} style={{ left: navEdge }} aria-hidden data-harness />
+        )}
         {phase === 'look-brief' && <div className={styles.scrim} data-harness />}
         <aside
           className={styles.panel}
@@ -617,6 +661,13 @@ export function ClickTest() {
       </div>
 
       {phase !== 'active' && <div className={styles.scrim} data-harness />}
+
+      {/* Until the first pick, an arrow points from the task card to the nav, so eyes go there first. */}
+      {phase === 'active' && !selection && (
+        <svg className={styles.navArrow} viewBox="0 0 88 56" aria-hidden data-harness>
+          <path d="M0 28 L34 0 V16 H88 V40 H34 V56 Z" />
+        </svg>
+      )}
 
       {ripples.map((r) => (
         <span key={r.id} className={styles.ripple} style={{ left: r.x, top: r.y }} aria-hidden />

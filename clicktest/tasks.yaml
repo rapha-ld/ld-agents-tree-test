@@ -54,8 +54,8 @@
 # audiences, measurement.
 
 first_impression:
-  look: "Look at this navigation for 10 seconds."
-  seconds: 10
+  look: "Look at this navigation for 30 seconds."
+  seconds: 30
   question: "What do you think you can do with this product?"
 
 # Asked after every task. A rating at or below `probe.at_or_below` adds the
