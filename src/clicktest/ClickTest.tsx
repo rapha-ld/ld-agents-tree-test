@@ -511,7 +511,7 @@ export function ClickTest() {
           <NavShell config={CONFIG} initialPage="home" />
         </div>
         <div className={styles.scrim} data-harness />
-        <aside className={styles.panel} data-harness data-phase="brief">
+        <aside className={styles.panel} data-harness>
           <TextField value={impression} onChange={setImpression} isRequired autoFocus className={styles.field}>
             <Label className={styles.question}>{FIRST_IMPRESSION.question}</Label>
             <TextArea rows={4} />
@@ -631,7 +631,7 @@ export function ClickTest() {
           <NavShell config={CONFIG} initialPage="home" />
         </div>
         <div className={styles.scrim} data-harness />
-        <aside className={styles.panel} data-harness data-phase="brief" aria-live="polite">
+        <aside className={styles.panel} data-harness aria-live="polite">
           <p className={styles.task}>
             You have {scenarioIds.length} {scenarioIds.length === 1 ? 'scenario' : 'scenarios'} coming up.
           </p>
@@ -664,12 +664,7 @@ export function ClickTest() {
           <div className={styles.spotlightWash} style={{ left: navEdge }} aria-hidden data-harness />
         )}
         {phase === 'look-brief' && <div className={styles.scrim} data-harness />}
-        <aside
-          className={styles.panel}
-          data-harness
-          data-phase={phase === 'look-brief' ? 'brief' : 'active'}
-          aria-live="polite"
-        >
+        <aside className={styles.panel} data-harness aria-live="polite">
           <p className={styles.task}>{FIRST_IMPRESSION.look}</p>
           {phase === 'look-brief' ? (
             <div className={styles.actions}>
@@ -706,7 +701,7 @@ export function ClickTest() {
       ))}
 
       {phase === 'rating' && FOLLOW_UP ? (
-        <aside className={styles.panel} data-harness data-phase="brief" aria-live="polite">
+        <aside className={styles.panel} data-harness aria-live="polite">
           {timedOut && <p className={styles.timedOut}>Time ran out on that task.</p>}
           {gaveUp && FOLLOW_UP.gave_up && (
             <TextField value={unsure} onChange={setUnsure} autoFocus className={styles.field}>
@@ -760,7 +755,7 @@ export function ClickTest() {
           </div>
         </aside>
       ) : (
-        <aside className={styles.panel} data-harness data-phase={phase} aria-live="polite">
+        <aside className={styles.panel} data-harness aria-live="polite">
           {phase === 'brief' && task.scenario ? (
             <>
               <p className={styles.counter}>
