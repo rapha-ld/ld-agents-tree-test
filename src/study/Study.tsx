@@ -124,6 +124,11 @@ export function Study() {
   const [saveIssue, setSaveIssue] = useState<SaveIssue | null>(null);
   const [writeBlocked, setWriteBlocked] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  /**
+   * True while a save is in flight. Buttons that move on are disabled, so a
+   * double click on a slow connection can't skip or score a task twice.
+   */
+  const [busy, setBusy] = useState(false);
 
   const sessionId = useRef<string>(crypto.randomUUID());
   const seq = useRef(0);
@@ -226,13 +231,14 @@ export function Study() {
 
   const canStart = label.trim() !== '' && ldUsage !== null;
 
-  const start = async () => {
-    if ('badId' in assignment || !canStart) return;
-    setScheme(assignment.scheme);
-    sessionStart.current = Date.now();
-    noteSave(await saveSession(session(assignment.scheme.id, false)));
-    setPhase('scenario');
-  };
+  const start = () =>
+    once(async () => {
+      if ('badId' in assignment || !canStart) return;
+      sessionStart.current = Date.now();
+      noteSave(await saveSession(session(assignment.scheme.id, false)));
+      setScheme(assignment.scheme);
+      setPhase('scenario');
+    });
 
   /** Fresh tree, fresh event trail, then the 'start' that times the task. */
   const beginTask = () => {
@@ -310,32 +316,47 @@ export function Study() {
     setPhase('task');
   };
 
-  const submit = async () => {
-    if (!selected) return;
-    record('submit', selected.node, selected.path.slice(0, -1));
-    await flush();
-    setPhase('confidence');
+  /** Run one step that saves, once, however many times it is clicked. */
+  const once = async (step: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await step();
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const submit = () =>
+    once(async () => {
+      if (!selected) return;
+      record('submit', selected.node, selected.path.slice(0, -1));
+      await flush();
+      setPhase('confidence');
+    });
 
   /** A skip counts as a failure but is reported on its own. No confidence question. */
-  const skip = async () => {
-    record('giveup');
-    await flush();
-    await saveTask(null, null);
-    nextTask();
-  };
+  const skip = () =>
+    once(async () => {
+      record('giveup');
+      await flush();
+      await saveTask(null, null);
+      nextTask();
+    });
 
-  const submitConfidence = async () => {
-    if (confidence === null) return;
-    await saveTask(confidence, confidence <= 4 && unsure.trim() !== '' ? unsure.trim() : null);
-    nextTask();
-  };
+  const submitConfidence = () =>
+    once(async () => {
+      if (confidence === null) return;
+      await saveTask(confidence, confidence <= 4 && unsure.trim() !== '' ? unsure.trim() : null);
+      nextTask();
+    });
 
-  const finish = async () => {
-    if (!scheme) return;
-    noteSave(await saveSession(session(scheme.id, true)));
-    setPhase('done');
-  };
+  const finish = () =>
+    once(async () => {
+      if (!scheme) return;
+      noteSave(await saveSession(session(scheme.id, true)));
+      setPhase('done');
+    });
 
   /**
    * Treejack-style: everything starts closed. Opening a section is a click,
@@ -473,7 +494,7 @@ export function Study() {
             </p>
           )}
 
-          <button className="primary" onClick={() => void start()} disabled={!canStart}>
+          <button className="primary" onClick={() => void start()} disabled={!canStart || busy}>
             Start
           </button>
         </div>
@@ -552,6 +573,7 @@ export function Study() {
                     style={depth > 0 ? { paddingLeft: `${0.9 + depth * 2}rem` } : undefined}
                     aria-expanded={isSection ? isOpen : undefined}
                     aria-pressed={isSection && !node.destinationId ? undefined : isPicked}
+                    disabled={busy}
                     onClick={() => (isSection ? toggle(node, path) : pick(node, path))}
                   >
                     <span>{node.label}</span>
@@ -574,11 +596,11 @@ export function Study() {
           </ul>
 
           <div className="actionbar">
-            <button className="primary" disabled={selected === null} onClick={() => void submit()}>
+            <button className="primary" disabled={selected === null || busy} onClick={() => void submit()}>
               I&rsquo;d find it here
             </button>
             <span className="spacer" />
-            <button className="ghost" onClick={() => void skip()}>
+            <button className="ghost" disabled={busy} onClick={() => void skip()}>
               Skip this task
             </button>
           </div>
@@ -621,7 +643,7 @@ export function Study() {
             </label>
           ) : null}
 
-          <button className="primary" disabled={confidence === null} onClick={() => void submitConfidence()}>
+          <button className="primary" disabled={confidence === null || busy} onClick={() => void submitConfidence()}>
             {position + 1 >= taskCount ? 'Continue' : 'Next task'}
           </button>
         </div>
@@ -671,7 +693,7 @@ export function Study() {
             <textarea rows={3} value={confusing} onChange={(e) => setConfusing(e.target.value)} />
           </label>
 
-          <button className="primary" disabled={!complete} onClick={() => void finish()}>
+          <button className="primary" disabled={!complete || busy} onClick={() => void finish()}>
             Finish
           </button>
         </div>
