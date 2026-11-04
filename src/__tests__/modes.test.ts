@@ -140,7 +140,7 @@ describe('mode switcher in the results analysis', () => {
       scheme_id: 'm',
       started_at: '2026-08-18T00:00:00.000Z',
       finished_at: '2026-08-18T00:05:00.000Z',
-      user_agent: 'test',
+      user_agent: 'test', ld_usage: null, task_order: [], survey: null, survey_confusing: null,
     };
   }
   let seq = 0;

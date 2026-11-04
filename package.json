@@ -1,5 +1,5 @@
 {
-  "name": "nav-lab",
+  "name": "ld-agents-tree-test",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -14,7 +14,6 @@
     "score": "tsx scripts/score.ts",
     "pull": "tsx scripts/pull-results.ts",
     "discard": "tsx scripts/discard.ts",
-    "backfill": "tsx scripts/backfill-finished.ts",
     "score:clicktest": "tsx scripts/score-clicktest.ts",
     "clicktest:sessions": "tsx scripts/clicktest-sessions.ts"
   },

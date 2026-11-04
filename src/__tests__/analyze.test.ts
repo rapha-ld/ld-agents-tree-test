@@ -17,7 +17,7 @@ function session(id: string, schemeId = 'demo'): StudySession {
     scheme_id: schemeId,
     started_at: '2026-08-18T00:00:00.000Z',
     finished_at: '2026-08-18T00:10:00.000Z',
-    user_agent: 'test',
+    user_agent: 'test', ld_usage: null, task_order: [], survey: null, survey_confusing: null,
   };
 }
 
@@ -309,7 +309,7 @@ describe('directness with every section open', () => {
     scheme_id: 'm',
     started_at: '2026-01-01T00:00:00Z',
     finished_at: '2026-01-01T00:01:00Z',
-    user_agent: 'test',
+    user_agent: 'test', ld_usage: null, task_order: [], survey: null, survey_confusing: null,
   };
   const ev = (seq: number, kind: string, node_path: string, depth: number, destination_id: string | null = null) => ({
     session_id: session.id,

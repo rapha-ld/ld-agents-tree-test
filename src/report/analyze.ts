@@ -1,11 +1,12 @@
 import type { Scenario, Scheme, SchemeNode } from '../parse/types';
-import type { StudyEvent, StudyResponse, StudySession } from '../session';
+import type { StudyEvent, StudySession, StudyTaskResult } from '../session';
+import { classifyTask } from '../study/outcome';
 
 export type ResultsFile = {
   sessions: StudySession[];
   events: StudyEvent[];
-  /** Absent in files exported before the label question existed. */
-  responses?: StudyResponse[];
+  /** One row per finished or skipped task, with confidence. */
+  tasks?: StudyTaskResult[];
 };
 
 function findByLabels(scheme: Scheme, labels: string[]): SchemeNode | null {
@@ -198,28 +199,14 @@ export function analyze(results: ResultsFile, schemes: Scheme[], scenarios: Scen
 
     if (terminal.kind === 'giveup') {
       for (const a of [acc, schemeAcc]) a.giveups += 1;
-    } else if (terminal.destination_id && accepted.has(terminal.destination_id)) {
-      for (const a of [acc, schemeAcc]) a.successes += 1;
-      // Direct means they picked the answer and did not change their mind.
-      //
-      // Counting opens does not work now that every section starts expanded:
-      // there is nothing to open on the way to an answer, so almost every run
-      // would score as direct. Nor does absence of `back`, which now means only
-      // that they did not collapse a section to reduce clutter, and tidying the
-      // list is not the same as being lost.
-      //
-      // What is left, and what the question was always really asking, is
-      // whether their first pick was the right one. A click carrying a
-      // destination id is a pick; one carrying none is a section opening or
-      // closing. No section in any scheme is bound to a destination and also
-      // has children, and a test holds that, so the two cannot be confused.
-      const picks = ordered.filter((e) => e.kind === 'click' && e.destination_id !== null).length;
-      // Every section starts open, so touching one at all means they closed it
-      // or reopened it, which is fiddling rather than the path to an answer.
-      const fiddled = ordered.some(
-        (e) => e.kind === 'back' || (e.kind === 'click' && e.destination_id === null),
-      );
-      if (picks <= 1 && !fiddled) for (const a of [acc, schemeAcc]) a.direct += 1;
+    } else {
+      // Treejack scoring, shared with the study so the table and the report agree:
+      // direct means every node opened or picked was on the way to the answer.
+      const scored = classifyTask(ordered, accepted);
+      if (scored && (scored.outcome === 'direct' || scored.outcome === 'indirect')) {
+        for (const a of [acc, schemeAcc]) a.successes += 1;
+        if (scored.outcome === 'direct') for (const a of [acc, schemeAcc]) a.direct += 1;
+      }
     }
 
     const firstNav = ordered.find((e) => e.kind === 'click' || e.kind === 'mode');

@@ -1,21 +1,34 @@
--- nav-lab study tables.
+-- Agents IA tree test tables.
 --
--- The anon role can insert and nothing else, so a participant cannot read or
--- change anyone else's answers. Export results with the service role or from the
--- Supabase dashboard.
+-- These live in the same Supabase project as ld-nav-lab, beside its sessions,
+-- events and responses tables, and never touch them. Paste the whole file into
+-- the Supabase SQL editor and run it. It is safe to re-run.
+--
+-- The anon role (the key in the published site) can insert and nothing else,
+-- so no participant can read anyone's answers. Export results with
+-- `pnpm pull`, which uses the service role.
 
-create table if not exists sessions (
+create table if not exists agents_sessions (
   id                uuid primary key,
   participant_label text,
   scheme_id         text        not null,
   started_at        timestamptz not null,
   finished_at       timestamptz,
-  user_agent        text
+  user_agent        text,
+  -- 'regularly' | 'a-few-times' | 'never', asked on the intro screen.
+  ld_usage          text,
+  -- Authored task indexes in the order this participant saw them.
+  task_order        jsonb,
+  -- Post-test grid: { "<capability id>": "yes" | "not-sure" | "no" }.
+  survey            jsonb,
+  survey_confusing  text
 );
 
-create table if not exists events (
+-- Every click, back, submit and skip ('giveup'), in order. The source of truth
+-- for path analysis; agents_tasks is the same data scored per task.
+create table if not exists agents_events (
   id             bigserial primary key,
-  session_id     uuid        not null,
+  session_id     uuid        not null references agents_sessions (id) on delete cascade,
   scenario_id    text        not null,
   task_index     int         not null,
   seq            int         not null,
@@ -26,95 +39,55 @@ create table if not exists events (
   ts             timestamptz not null
 );
 
--- `create table if not exists` leaves an existing table's constraints alone, so
--- a new event kind needs the check replaced explicitly. Dropping first makes
--- this safe to re-run.
-alter table events drop constraint if exists events_kind_check;
-alter table events add constraint events_kind_check
-  check (kind in ('start', 'click', 'back', 'submit', 'giveup', 'mode', 'stepback'));
+create index if not exists agents_events_session_idx on agents_events (session_id, scenario_id, task_index, seq);
 
-create index if not exists events_session_idx on events (session_id, scenario_id, task_index, seq);
-
--- What a participant says they would look for, asked once per scenario before
--- they touch the menu. The wording of the question is stored next to the answer:
--- if the prompt is ever reworded, old answers stay interpretable instead of
--- quietly becoming answers to a question nobody was asked.
-create table if not exists responses (
-  id          bigserial primary key,
-  session_id  uuid        not null,
-  scenario_id text        not null,
-  task_index  integer     not null default 0,
-  revision    integer     not null default 0,
-  prompt      text        not null,
-  response    text        not null,
-  ts          timestamptz not null
+-- One row per task, written after the confidence question or a skip.
+create table if not exists agents_tasks (
+  id                 bigserial primary key,
+  session_id         uuid        not null references agents_sessions (id) on delete cascade,
+  scenario_id        text        not null,
+  task_index         int         not null,
+  position           int         not null,
+  prompt             text        not null,
+  outcome            text        not null check (outcome in ('direct', 'indirect', 'fail', 'skip')),
+  answer_path        text,
+  answer_destination text,
+  first_click        text,
+  time_on_task_ms    int,
+  confidence         smallint    check (confidence between 1 and 7),
+  unsure_reason      text,
+  ts                 timestamptz not null
 );
 
--- Added when the label question moved from once per scenario to once per task.
--- Existing rows predate per-task answers, so they keep the default of 0.
-alter table responses add column if not exists task_index integer not null default 0;
+create index if not exists agents_tasks_session_idx on agents_tasks (session_id, task_index);
 
--- A participant can step back and change their answer. Each attempt is inserted
--- rather than overwritten, so the revisions are visible; the highest revision
--- for a task is the final answer.
-alter table responses add column if not exists revision integer not null default 0;
+alter table agents_sessions enable row level security;
+alter table agents_events   enable row level security;
+alter table agents_tasks    enable row level security;
 
-create index if not exists responses_session_idx on responses (session_id, scenario_id, task_index);
+drop policy if exists agents_sessions_insert on agents_sessions;
+drop policy if exists agents_sessions_update on agents_sessions;
+drop policy if exists agents_events_insert   on agents_events;
+drop policy if exists agents_tasks_insert    on agents_tasks;
 
-alter table sessions  enable row level security;
-alter table events    enable row level security;
-alter table responses enable row level security;
+create policy agents_sessions_insert on agents_sessions for insert to anon with check (true);
+create policy agents_sessions_update on agents_sessions for update to anon using (true) with check (true);
+create policy agents_events_insert   on agents_events   for insert to anon with check (true);
+create policy agents_tasks_insert    on agents_tasks    for insert to anon with check (true);
 
--- A session row is written at the start and updated once at the end, so the
--- client needs update on its own row as well as insert.
---
--- Dropped first because create policy has no "if not exists", and this file is
--- meant to be safe to re-run after an edit.
-drop policy if exists sessions_insert   on sessions;
-drop policy if exists sessions_update   on sessions;
-drop policy if exists events_insert     on events;
-drop policy if exists responses_insert  on responses;
+-- Policies narrow privileges; they don't grant them. Without these grants every
+-- write fails with "permission denied" (SQLSTATE 42501).
+grant insert, update on table agents_sessions to anon;
+grant insert         on table agents_events   to anon;
+grant insert         on table agents_tasks    to anon;
 
-create policy sessions_insert  on sessions  for insert to anon with check (true);
-create policy sessions_update  on sessions  for update to anon using (true) with check (true);
-create policy events_insert    on events    for insert to anon with check (true);
-create policy responses_insert on responses for insert to anon with check (true);
+grant usage on sequence agents_events_id_seq to anon;
+grant usage on sequence agents_tasks_id_seq  to anon;
 
--- Table privileges, which are separate from the policies above and easy to
--- forget. A policy narrows an existing privilege; it does not grant one. Without
--- these the API returns "permission denied for table sessions" (SQLSTATE 42501)
--- and no write can ever succeed, however permissive the policies are.
---
--- anon gets exactly what the study needs and nothing more. No select: that is
--- what keeps the public bundle unable to read anyone's answers, and it is why
--- the report is a local tool rather than a page behind a login.
-grant insert, update on table sessions  to anon;
-grant insert          on table events    to anon;
-grant insert          on table responses to anon;
+-- The end-of-run update filters on id, which needs select on that column only.
+-- There is no select policy, so anon still reads zero rows.
+grant select (id) on table agents_sessions to anon;
 
--- Both are bigserial, so inserting a row also consumes the sequence.
-grant usage on sequence events_id_seq    to anon;
-grant usage on sequence responses_id_seq to anon;
-
--- Marking a run finished is "update sessions set finished_at = ... where id = ...",
--- and Postgres requires select privilege on every column named in a where clause.
--- So the update needs select on id, and only on id: a column-level grant rather
--- than the table-wide one the error message suggests.
---
--- This leaks nothing. There is still no select policy on the table, so row level
--- security returns zero rows for any read anon attempts, and the ids are random
--- UUIDs the client generated itself.
-grant select (id) on table sessions to anon;
-
--- service_role bypasses row level security but still needs the privilege. This
--- is the role scripts/pull-results.ts uses to assemble the report, and
--- scripts/discard.ts uses to remove a single run.
---
--- Delete is granted to service_role only, never to anon: a participant must not
--- be able to remove anyone's answers, including their own.
-grant select, delete on table sessions, events, responses to service_role;
-
--- Update on sessions, for scripts/backfill-finished.ts, which reconstructs
--- finished_at from the events of runs that reached the end while the client's
--- own update was failing.
-grant update on table sessions to service_role;
+-- For pnpm pull and pnpm discard.
+grant select, delete on table agents_sessions, agents_events, agents_tasks to service_role;
+grant update         on table agents_sessions to service_role;

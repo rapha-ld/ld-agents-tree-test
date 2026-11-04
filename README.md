@@ -1,3 +1,29 @@
+# Agents IA tree test
+
+A copy of [ld-nav-lab](https://github.com/launchdarkly-labs/ld-nav-lab) running the
+[Agents IA tree test, revised (unmoderated)](https://launchdarkly.atlassian.net/wiki/spaces/~712020bf07545e6e1a4c1ea445ad7ad11b037e/pages/5476319269/Agents+IA+tree+test+revised+unmoderated).
+
+- **Trees:** `schemes/01-tree-a.md` (new IA) and `schemes/02-tree-b.md` (current IA). Participants
+  see them as "Menu 1" and "Menu 2". A bare link assigns one at random; `?scheme=tree-a` or
+  `?scheme=tree-b` forces one.
+- **Tasks:** `scenarios/01-online-store.md`, one scenario with all 11 tasks. Every participant
+  gets all 11 in their own random order.
+- **Flow:** intro and "Have you used LaunchDarkly?", the store scenario, then per task: click
+  through a collapsed tree, choose "I'd find it here" or "Skip this task", then rate confidence
+  1 to 7 ("What made you unsure?" at 4 or lower). Skips get no confidence question. Ends with the
+  Yes / Not sure / No grid and an optional "anything confusing?" box.
+- **Scoring** (`src/study/outcome.ts`): direct (every click on the way to the answer, nothing
+  collapsed), indirect (right answer after a detour), fail, skip. First click and time on task
+  are stored too.
+- **Results:** tables `agents_sessions`, `agents_events` and `agents_tasks` in the same Supabase
+  project as ld-nav-lab. Run `supabase/schema.sql` in the SQL editor once before sending links.
+  `pnpm pull` downloads them to `agents-tree-test-results.json`.
+
+The click test page from ld-nav-lab is still in the repo but is left out of the build. Everything below is ld-nav-lab's original
+documentation; table and file names there refer to the original study.
+
+---
+
 # nav-lab
 
 A throwaway tool for comparing candidate navigation schemes for LaunchDarkly.

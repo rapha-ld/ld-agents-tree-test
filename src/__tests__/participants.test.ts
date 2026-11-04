@@ -14,7 +14,7 @@ function session(id: string, finished: string | null, label: string | null = nul
     scheme_id: 'demo',
     started_at: '2026-08-31T10:00:00.000Z',
     finished_at: finished,
-    user_agent: 'test',
+    user_agent: 'test', ld_usage: null, task_order: [], survey: null, survey_confusing: null,
   };
 }
 

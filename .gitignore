@@ -3,6 +3,4 @@ dist
 .env
 .env.local
 .DS_Store
-nav-lab-results.json
-clicktest-results.json
-clicktest-report.md
+agents-tree-test-results.json
