@@ -13,7 +13,9 @@
     "extract": "tsx scripts/extract.ts",
     "score": "tsx scripts/score.ts",
     "pull": "tsx scripts/pull-results.ts",
-    "discard": "tsx scripts/discard.ts"
+    "discard": "tsx scripts/discard.ts",
+    "score:clicktest": "tsx scripts/score-clicktest.ts",
+    "clicktest:sessions": "tsx scripts/clicktest-sessions.ts"
   },
   "dependencies": {
     "@launchpad-ui/components": "0.25.0",
