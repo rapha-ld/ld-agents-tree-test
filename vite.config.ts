@@ -7,6 +7,8 @@ export default defineConfig({
   base: './',
   build: {
     rollupOptions: {
+      // Only the tree test is published. The click test from ld-nav-lab is kept
+      // in the repo but left out of the build, so it can't write to that study.
       input: {
         main: resolve(__dirname, 'index.html'),
       },

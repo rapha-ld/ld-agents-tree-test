@@ -1,0 +1,347 @@
+/* Lo-fi stand-ins: bars and boxes in two greys, nothing else. Bar widths and
+   heights arrive as --w / --h from Placeholder.tsx. */
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-500);
+  padding: 0 var(--lp-spacing-500) var(--lp-spacing-700);
+}
+
+/* ── Primitives ───────────────────────────────────────────────────────── */
+
+.line {
+  display: block;
+  width: var(--w, 60%);
+  height: var(--lp-size-8);
+  border-radius: var(--lp-border-radius-large);
+  background: var(--lp-color-bg-ui-tertiary);
+}
+
+/* A title: a touch taller, in the border grey, a step darker. */
+.strong {
+  height: var(--lp-size-10);
+  background: var(--lp-color-border-ui-primary);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-300);
+  padding: var(--lp-spacing-500);
+  border: 1px solid var(--lp-color-border-ui-primary);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-bg-ui-primary);
+  min-width: 0;
+}
+
+.cardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lp-spacing-400);
+}
+
+.stack {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-300);
+}
+
+.pill,
+.chip {
+  flex: none;
+  display: block;
+  height: var(--lp-size-20);
+  border-radius: var(--lp-border-radius-large);
+  background: var(--lp-color-bg-ui-tertiary);
+}
+
+.pill {
+  width: var(--lp-size-48);
+}
+
+.chip {
+  width: var(--lp-size-64);
+  border: 1px solid var(--lp-color-border-ui-primary);
+  background: none;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--lp-spacing-300);
+}
+
+.search {
+  width: var(--lp-size-240);
+  height: var(--lp-size-28);
+  border: 1px solid var(--lp-color-border-ui-primary);
+  border-radius: var(--lp-border-radius-medium);
+}
+
+/* ── List ─────────────────────────────────────────────────────────────── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-400);
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: var(--lp-spacing-500);
+  padding: var(--lp-spacing-600) var(--lp-spacing-500);
+  border: 1px solid var(--lp-color-border-ui-primary);
+  border-radius: var(--lp-border-radius-medium);
+}
+
+/* ── Table ────────────────────────────────────────────────────────────── */
+
+.table {
+  border: 1px solid var(--lp-color-border-ui-primary);
+  border-radius: var(--lp-border-radius-medium);
+  overflow: hidden;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: var(--columns);
+  align-items: center;
+  gap: var(--lp-spacing-500);
+  height: var(--lp-size-36);
+  padding-inline: var(--lp-spacing-500);
+
+  & + & {
+    border-top: 1px solid var(--lp-color-border-ui-secondary);
+  }
+}
+
+.tableHead {
+  background: var(--lp-color-bg-ui-secondary);
+}
+
+/* ── Dashboard ────────────────────────────────────────────────────────── */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-500);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--lp-spacing-500);
+}
+
+/* A tile's big number. */
+.figure {
+  width: 40%;
+  height: var(--lp-size-24);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-border-ui-primary);
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--lp-spacing-500);
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--lp-spacing-200);
+  height: var(--lp-size-160);
+  padding-top: var(--lp-spacing-300);
+  border-bottom: 1px solid var(--lp-color-border-ui-primary);
+}
+
+.bar {
+  flex: 1;
+  height: var(--h);
+  border-radius: var(--lp-border-radius-regular) var(--lp-border-radius-regular) 0 0;
+  background: var(--lp-color-bg-ui-tertiary);
+}
+
+/* ── Pipeline ─────────────────────────────────────────────────────────── */
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--lp-spacing-500);
+  align-items: start;
+}
+
+.phase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-400);
+  padding: var(--lp-spacing-400);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-bg-ui-secondary);
+}
+
+/* ── Graph ────────────────────────────────────────────────────────────── */
+
+.canvas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-900);
+  padding: var(--lp-spacing-900);
+  min-height: var(--lp-size-400);
+  border: 1px solid var(--lp-color-border-ui-primary);
+  border-radius: var(--lp-border-radius-medium);
+  /* A dot grid, the canvas's own background. */
+  background-image: radial-gradient(var(--lp-color-border-ui-primary) 1px, transparent 1px);
+  background-size: var(--lp-size-16) var(--lp-size-16);
+}
+
+.graphRow {
+  display: flex;
+  align-items: center;
+}
+
+.nodeWrap {
+  display: flex;
+  align-items: center;
+}
+
+.connector {
+  width: var(--lp-size-48);
+  height: 1px;
+  background: var(--lp-color-border-ui-primary);
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: var(--lp-spacing-300);
+  width: var(--lp-size-160);
+  padding: var(--lp-spacing-400);
+  border: 1px solid var(--lp-color-border-ui-primary);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-bg-ui-primary);
+
+  & .line {
+    flex: 1;
+  }
+}
+
+.nodeIcon,
+.cardIcon {
+  flex: none;
+  display: block;
+  width: var(--lp-size-24);
+  height: var(--lp-size-24);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-bg-ui-tertiary);
+}
+
+/* ── Split ────────────────────────────────────────────────────────────── */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  gap: var(--lp-spacing-500);
+  align-items: start;
+}
+
+.splitList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-200);
+}
+
+.splitItem {
+  padding: var(--lp-spacing-400);
+  border-radius: var(--lp-border-radius-medium);
+}
+
+.selected {
+  background: var(--lp-color-bg-ui-secondary);
+}
+
+.splitMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-500);
+}
+
+.editor {
+  gap: var(--lp-spacing-400);
+  background: var(--lp-color-bg-ui-secondary);
+}
+
+/* Code lines step in by --indent levels. */
+.codeLine {
+  padding-inline-start: calc(var(--indent, 0) * var(--lp-spacing-500));
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────── */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--lp-size-224), 1fr));
+  gap: var(--lp-spacing-500);
+}
+
+/* ── Detail ───────────────────────────────────────────────────────────── */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-500);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-300);
+  max-width: var(--lp-size-560);
+}
+
+.pills {
+  display: flex;
+  gap: var(--lp-spacing-300);
+  padding-top: var(--lp-spacing-200);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--lp-spacing-700);
+  border-bottom: 1px solid var(--lp-color-border-ui-primary);
+}
+
+.tab {
+  display: block;
+  width: var(--lp-size-64);
+  height: var(--lp-size-8);
+  margin-bottom: var(--lp-spacing-400);
+  border-radius: var(--lp-border-radius-large);
+  background: var(--lp-color-bg-ui-tertiary);
+}
+
+/* The selected tab's underline, on the tab bar's rule. */
+.selectedTab {
+  position: relative;
+  background: var(--lp-color-border-ui-primary);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: calc(-1 * var(--lp-spacing-400) - 1px);
+    height: var(--lp-size-2);
+    background: var(--lp-color-text-ui-primary-base);
+  }
+}
+
+/* A rule reads left to right: an attribute chip, then its values. */
+.detail .cardRow {
+  justify-content: flex-start;
+}

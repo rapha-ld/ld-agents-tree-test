@@ -1,0 +1,362 @@
+/* No text in the study is smaller than 13px. LaunchPad's smallest step is 11px,
+   so raise it for the whole page, nav included. */
+:global(:root) {
+  --lp-font-size-100: var(--lp-size-13);
+}
+
+.screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--lp-size-24);
+  background: var(--lp-color-bg-ui-secondary);
+}
+
+.card {
+  max-width: 560px;
+  padding: var(--lp-size-32);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-bg-ui-primary);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  font: var(--lp-text-body-1-regular);
+  color: var(--lp-color-text-ui-primary);
+}
+
+.card h1 {
+  margin: 0 0 var(--lp-size-12);
+  font: var(--lp-text-heading-1-semibold);
+}
+
+.card p {
+  margin: 0 0 var(--lp-size-12);
+}
+
+.consent {
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.warning {
+  color: var(--lp-color-text-feedback-warning, #8a5a00);
+}
+
+.actions {
+  display: flex;
+  gap: var(--lp-size-8);
+  margin-top: var(--lp-size-16);
+}
+
+.stage {
+  position: fixed;
+  inset: 0;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.frame > * {
+  flex: 1;
+}
+
+.frame[data-locked] {
+  pointer-events: none;
+}
+
+/* The current-page fill on Home reads as focus behind the scenario card, so it's hidden there. */
+.frame[data-locked] :global([data-current]),
+.frame[data-locked] :global([aria-current='page']) {
+  background-color: transparent !important;
+  border-color: var(--lp-color-border-ui-primary) !important;
+  box-shadow: none !important;
+}
+
+/* While confirming, the picked nav item gets a focus ring. */
+.frame :global([data-confirm-target]) {
+  outline: 3px solid var(--lp-color-border-interactive-focus, #405bff);
+  outline-offset: 2px;
+  border-radius: var(--lp-border-radius-regular, 4px);
+}
+
+.confirm {
+  margin: var(--lp-size-16) 0 0;
+}
+
+/* Doubled class to win over LaunchPad's slider grid, so the ticks and labels span the full width. */
+.rating.rating {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--lp-size-8);
+  width: 100%;
+  margin-bottom: var(--lp-size-24);
+}
+
+.rating.rating > * {
+  width: auto;
+  text-align: start;
+}
+
+/* The scale is inset so the end labels can sit centred under 1 and 7 without running past the
+   card. Each tick is 20px wide, so its centre is 10px in from its edge, which is where the track's
+   ends (and so the thumb's 1 and 7 positions) sit. */
+.rating {
+  --scale-inset: 56px;
+  --tick: 20px;
+}
+
+.rating.rating .ratingTrack {
+  position: relative;
+  width: auto;
+  margin-inline: calc(var(--scale-inset) + var(--tick) / 2);
+}
+
+/* The track is 8px tall; this widens what a press can land on. */
+.ratingTrack::before {
+  content: '';
+  position: absolute;
+  inset: -12px -10px;
+}
+
+.rating[data-unset] .ratingThumb {
+  opacity: 0;
+}
+
+.ratingTicks {
+  display: flex;
+  justify-content: space-between;
+  padding-inline: var(--scale-inset);
+  font: var(--lp-text-body-2-regular);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.ratingTicks span {
+  width: var(--tick);
+  text-align: center;
+  cursor: pointer;
+}
+
+.ratingTicks span[data-picked] {
+  font-weight: var(--lp-font-weight-semibold);
+  color: var(--lp-color-text-ui-primary);
+}
+
+/* The first look: a spotlight. The page blurs under a dark wash that starts at the nav's edge
+   (.spotlightWash), and the nav gets an outline. The look card sits above the wash. */
+.frame[data-spotlight] :global(main) {
+  filter: blur(3px);
+}
+
+.frame[data-spotlight] :global([data-marker='sidebar']) {
+  box-shadow: inset 0 0 0 3px var(--lp-color-border-interactive-focus, #405bff);
+}
+
+.spotlightWash {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.62);
+  pointer-events: none;
+  z-index: 900;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.25);
+}
+
+/* Every card sits in the middle of the screen, like a modal, so there's one place to look. */
+.panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 560px;
+  max-height: calc(100vh - var(--lp-size-48, 48px));
+  overflow-y: auto;
+  padding: var(--lp-size-32);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-bg-ui-primary);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.18);
+  font: var(--lp-text-body-1-regular);
+  color: var(--lp-color-text-ui-primary);
+  z-index: 1000;
+}
+
+.counter {
+  margin: 0 0 var(--lp-size-8);
+  font: var(--lp-text-label-1-medium);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.taskCounter {
+  margin: 0 0 var(--lp-size-8);
+  font: var(--lp-text-label-1-semibold);
+  color: var(--lp-color-text-interactive-primary, #405bff);
+}
+
+/* On the task card the scenario stays as a reminder, smaller than the task. */
+.scenarioReminder {
+  margin: 0 0 var(--lp-size-16);
+  font: var(--lp-text-body-2-regular);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.task {
+  margin: 0;
+  font-family: var(--lp-font-family-base);
+  font-size: 17px;
+  font-weight: var(--lp-font-weight-bold, 700);
+  line-height: 24px;
+}
+
+.scenario {
+  margin: 0;
+}
+
+.question {
+  display: block;
+  margin-bottom: var(--lp-size-12);
+  font: var(--lp-text-heading-2-semibold);
+  color: var(--lp-color-text-ui-primary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-size-8);
+  margin-bottom: var(--lp-size-24);
+}
+
+.field textarea {
+  width: 100%;
+  font: var(--lp-text-body-1-regular);
+}
+
+.rating .scaleEnds {
+  position: relative;
+  height: var(--lp-size-20);
+}
+
+.rating .scaleEnds span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.rating .scaleEnds span:first-child {
+  left: calc(var(--scale-inset) + var(--tick) / 2);
+}
+
+.rating .scaleEnds span:last-child {
+  left: calc(100% - var(--scale-inset) - var(--tick) / 2);
+}
+
+.scaleEnds {
+  display: flex;
+  align-self: stretch;
+  justify-content: space-between;
+  font: var(--lp-text-body-2-regular);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.gridQuestion {
+  margin: 0 0 var(--lp-size-24);
+  padding: 0;
+  border: 0;
+}
+
+.gridQuestion .gridRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, 88px);
+  align-items: center;
+  min-height: 40px;
+  border-bottom: 1px solid var(--lp-color-border-ui-primary);
+}
+
+.gridHeader {
+  text-align: center;
+  font: var(--lp-text-label-1-medium);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.gridItem {
+  font: var(--lp-text-body-2-regular);
+}
+
+.gridQuestion .gridCell {
+  justify-self: center;
+}
+
+.countdown {
+  margin: var(--lp-size-12) 0 0;
+  font: var(--lp-text-body-2-regular);
+  color: var(--lp-color-text-ui-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.timedOut {
+  margin: 0 0 var(--lp-size-8);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.ripple {
+  position: fixed;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  border: 2px solid var(--lp-color-border-interactive-focus, #405bff);
+  background: rgb(64 91 255 / 0.15);
+  pointer-events: none;
+  z-index: 2000;
+  animation: ripple 650ms ease-out forwards;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ripple {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.nameField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-size-4);
+  max-width: 320px;
+}
+
+.card[data-wide] {
+  max-width: 960px;
+}
+
+.introGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--lp-size-32);
+  align-items: center;
+  margin-bottom: var(--lp-size-8);
+}
+
+.steps {
+  margin: 0 0 var(--lp-size-16);
+  padding-inline-start: var(--lp-size-20);
+}
+
+.steps li + li {
+  margin-top: var(--lp-size-4);
+}

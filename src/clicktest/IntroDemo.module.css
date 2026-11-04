@@ -1,0 +1,180 @@
+/* One 9 second loop. Every element's keyframes use the same timeline:
+   0–8% rest, 18% open the section, 38% pick the page, 66% press Confirm. */
+
+.demo {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--lp-color-bg-ui-secondary);
+}
+
+.frame {
+  fill: var(--lp-color-bg-ui-primary);
+  stroke: var(--lp-color-border-ui-primary);
+}
+
+.nav {
+  fill: var(--lp-color-bg-ui-secondary);
+  stroke: var(--lp-color-border-ui-primary);
+}
+
+.ink {
+  fill: var(--lp-color-gray-400, #9ea3ad);
+}
+
+.muted {
+  fill: var(--lp-color-gray-200, #d8dbe0);
+}
+
+.field,
+.row {
+  fill: none;
+  stroke: var(--lp-color-gray-200, #d8dbe0);
+}
+
+.primary {
+  fill: var(--lp-color-bg-interactive-primary, #405bff);
+}
+
+.card {
+  fill: var(--lp-color-bg-ui-primary);
+  stroke: var(--lp-color-border-ui-primary);
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.12));
+}
+
+.cursor {
+  fill: #1b1d22;
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.zoom {
+  transform-origin: 45px 90px;
+  animation: zoom 9s ease-in-out infinite;
+}
+
+@keyframes zoom {
+  0%, 6% { transform: scale(1); transform-origin: 45px 90px; }
+  14%, 44% { transform: scale(1.7); transform-origin: 45px 90px; }
+  52% { transform: scale(1); transform-origin: 45px 90px; }
+  53% { transform: scale(1); transform-origin: 290px 200px; }
+  60%, 80% { transform: scale(1.7); transform-origin: 290px 200px; }
+  90%, 100% { transform: scale(1); transform-origin: 290px 200px; }
+}
+
+.pointer {
+  animation: pointer 9s ease-in-out infinite;
+}
+
+@keyframes pointer {
+  0%, 6% { transform: translate(200px, 120px); }
+  18%, 22% { transform: translate(40px, 74px); }
+  36%, 42% { transform: translate(46px, 95px); }
+  64%, 74% { transform: translate(258px, 214px); }
+  94%, 100% { transform: translate(200px, 120px); }
+}
+
+/* The section opens: its pages appear and the sections below move down. */
+.leaves {
+  animation: leaves 9s ease-in-out infinite;
+}
+
+@keyframes leaves {
+  0%, 19% { opacity: 0; }
+  23%, 92% { opacity: 1; }
+  98%, 100% { opacity: 0; }
+}
+
+.below {
+  animation: below 9s ease-in-out infinite;
+}
+
+@keyframes below {
+  0%, 19% { transform: translateY(0); }
+  23%, 92% { transform: translateY(24px); }
+  98%, 100% { transform: translateY(0); }
+}
+
+.target {
+  animation: target 9s ease-in-out infinite;
+}
+
+@keyframes target {
+  0%, 19%, 98%, 100% { opacity: 1; }
+  20%, 23% { opacity: 0.6; }
+}
+
+/* The page the pointer picks gets the selected fill. */
+.leafHit {
+  fill: var(--lp-color-gray-200, #d8dbe0);
+  animation: leafHit 9s ease-in-out infinite;
+}
+
+@keyframes leafHit {
+  0%, 39% { opacity: 0; }
+  42%, 92% { opacity: 1; }
+  98%, 100% { opacity: 0; }
+}
+
+.found {
+  animation: found 9s ease-in-out infinite;
+}
+
+@keyframes found {
+  0%, 66%, 72%, 100% { opacity: 1; }
+  68%, 70% { opacity: 0.55; }
+}
+
+.ripple {
+  fill: rgb(64 91 255 / 0.18);
+  stroke: #405bff;
+  stroke-width: 1.5;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.ripple1 { animation: ripple1 9s ease-out infinite; }
+.ripple2 { animation: ripple2 9s ease-out infinite; }
+.ripple3 { animation: ripple3 9s ease-out infinite; }
+
+@keyframes ripple1 {
+  0%, 18% { opacity: 0; transform: scale(0.4); }
+  19% { opacity: 1; transform: scale(0.5); }
+  25%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes ripple2 {
+  0%, 37% { opacity: 0; transform: scale(0.4); }
+  38% { opacity: 1; transform: scale(0.5); }
+  44%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes ripple3 {
+  0%, 66% { opacity: 0; transform: scale(0.4); }
+  67% { opacity: 1; transform: scale(0.5); }
+  73%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* Reduced motion: the finished state, standing still. */
+@media (prefers-reduced-motion: reduce) {
+  .zoom,
+  .pointer,
+  .leaves,
+  .below,
+  .target,
+  .leafHit,
+  .found,
+  .ripple {
+    animation: none;
+  }
+
+  .pointer { transform: translate(258px, 214px); }
+  .below { transform: translateY(24px); }
+}
+
+.buttonText {
+  fill: #fff;
+  font: 600 6px/1 Inter, system-ui, sans-serif;
+}

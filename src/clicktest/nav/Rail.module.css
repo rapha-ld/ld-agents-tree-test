@@ -1,0 +1,229 @@
+.rail {
+  width: var(--lp-size-56);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lp-spacing-200);
+  padding-block: var(--lp-spacing-400);
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--lp-color-bg-ui-primary);
+  border-inline-end: 1px solid var(--lp-color-border-ui-primary);
+}
+
+/* When the rail is taller than the viewport it should scroll, not squash its
+   items — without this the avatar collapsed to 0px tall. The spacer is the one
+   thing meant to flex. */
+.rail > :not(.spacer) {
+  flex-shrink: 0;
+}
+
+.separator {
+  flex: none;
+  width: var(--lp-size-24);
+  height: 1px;
+  margin-block: var(--lp-spacing-200);
+  background: var(--lp-color-border-ui-secondary);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Drawer mode's logo, in place of the expand button: a 32px box like the
+   button's, so it centres on the icon column, as the drawer's does. */
+.logoBox {
+  flex: none;
+  width: var(--lp-size-32);
+  height: var(--lp-size-32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  width: var(--lp-size-28);
+  height: var(--lp-size-28);
+}
+
+/* Every rail icon, pinned to fill-ui-primary so nothing upstream (button
+   variants, the button experiment) can move it. */
+.rail [data-icon] {
+  fill: var(--lp-color-fill-ui-primary);
+}
+
+/* Wraps a button that carries a dot (Approvals, What's new); the dot is
+   positioned against it. */
+.item {
+  position: relative;
+  display: flex;
+}
+
+/* Loom feedback: the current section's icon in its own fill, as in the
+   sidebar (variable set on the frame, NavShell.module.css). Sections only —
+   pinned items (Home, Approvals) keep the primary fill. (0,5,0) over `.rail [data-icon]`. */
+:global([data-current-icon]:not([data-current-icon='same'])) .button[data-current][aria-haspopup] [data-icon] {
+  fill: var(--current-icon-fill);
+}
+
+/* Loom feedback: the same one-time move as the sidebar's section icon
+   (Sidebar.module.css), on the rail's current section. */
+@keyframes currentPop {
+  0% { scale: 1; }
+  40% { scale: 1.16; }
+  70% { scale: 0.96; }
+  100% { scale: 1; }
+}
+
+@keyframes currentTilt {
+  0% { rotate: 0deg; }
+  35% { rotate: -10deg; }
+  70% { rotate: 4deg; }
+  100% { rotate: 0deg; }
+}
+
+:global([data-current-motion='pop']) .button[data-current][aria-haspopup] [data-icon] {
+  animation: currentPop var(--lp-duration-400) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:global([data-current-motion='tilt']) .button[data-current][aria-haspopup] [data-icon] {
+  animation: currentTilt var(--lp-duration-400) cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: 50% 80%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global([data-current-motion]) .button[data-current][aria-haspopup] [data-icon] {
+    animation: none;
+  }
+}
+
+/* Current item: the expanded nav's current-page tint. */
+.button[data-current] {
+  background: var(--lp-color-bg-ui-tertiary);
+  border-radius: var(--lp-border-radius-medium);
+}
+
+/* While its flyout is out, the icon keeps the minimal button's hover fill, so
+   it's clear which section the flyout belongs to after the pointer has moved
+   onto it. The current section keeps its own tint. */
+.button[data-flyout-open]:not([data-current]) {
+  background-color: var(--lp-color-bg-interactive-tertiary-hover);
+}
+
+/* Something is waiting. A dot, not a count. Anchored to the icon's centre
+   rather than the button's corner, so it stays beside the icon however wide
+   the button gets (the outlined row stretches them). */
+.dot {
+  position: absolute;
+  top: var(--lp-size-6);
+  inset-inline-start: calc(50% + var(--lp-size-4));
+  width: var(--lp-size-8);
+  height: var(--lp-size-8);
+  border-radius: 50%;
+  background: var(--lp-color-bg-interactive-primary-base);
+  box-shadow: 0 0 0 var(--lp-size-2) var(--lp-color-bg-ui-primary);
+  pointer-events: none;
+}
+
+.avatar {
+  margin-block-start: var(--lp-spacing-200);
+}
+
+/* Same 20px avatar as the expanded nav's footer; LaunchPad sizes are 16/24/40.
+   `.rail` lifts this to (0,2,0) over the avatar's own `.small`. */
+.rail .avatar {
+  width: var(--lp-size-20);
+  height: var(--lp-size-20);
+}
+
+/* ── Flyout ───────────────────────────────────────────────────────────── */
+
+/* LaunchPad's Menu in a Popover, overridden to Caleb's Figma frame
+   (Caleb-Sandbox, node 352:11431): 4px around the section, 4px under the
+   header, the items flush with each other and inset a further 4px, and a 3px
+   guide line on the popover's edge beside the current page. LaunchPad's
+   popover has a 1px border (transparent in light mode) that the frame
+   doesn't, so the section's padding gives that 1px back to land everything
+   where the frame does. Placement ("end top", 8px off the button) is in
+   Rail.tsx. */
+.flyout {
+  width: var(--lp-size-240);
+  padding: 0;
+}
+
+/* LaunchPad scrolls any popover not opened from its own MenuTrigger, which
+   crops it to inside its 1px border, and with it the guide line's outer pixel.
+   These are short enough not to scroll. The class is repeated to beat
+   LaunchPad's (0,2,0) rule. */
+.flyout.flyout.flyout {
+  overflow: visible;
+}
+
+/* (0,2,0) over LaunchPad's .menu. No padding of its own (the section has
+   it, as the frame's "Slot" does). Overflow visible, where LaunchPad scrolls:
+   the guide line sits on the popover's edge, outside the menu's box, and the
+   flyouts are short enough never to need to scroll. */
+.flyout .flyoutMenu {
+  padding: 0;
+  overflow: visible;
+  outline: none;
+}
+
+/* LaunchPad's MenuSection pads 4px already; less the popover's 1px border. */
+.flyout .flyoutSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: calc(var(--lp-spacing-200) - 1px);
+}
+
+/* LaunchPad's Header already uses label-2-medium in secondary; the frame
+   pads it 4px, and 12px at the start so its text lines up with the items'. */
+.flyout .flyoutHeader {
+  padding: var(--lp-spacing-200) var(--lp-spacing-200) var(--lp-spacing-200) var(--lp-spacing-400);
+  margin-block-end: var(--lp-spacing-200);
+}
+
+/* LaunchPad's MenuItem (28px, 8px side padding, label-1-medium), inset 4px
+   from the header's edge on both sides, so the right side matches the left,
+   with 6px corners rather than LaunchPad's 3px. */
+.flyout .flyoutItem {
+  margin-inline: var(--lp-spacing-200);
+  border-radius: var(--lp-border-radius-medium);
+}
+
+.flyout .flyoutCurrent {
+  background-color: var(--lp-color-bg-ui-tertiary);
+}
+
+/* The guide line: back over the 4px inset and 4px of padding to the
+   popover's edge, inset 4px top and bottom, with 3px corners on the outside
+   and 6px on the inside, as in the frame. The frame's gray-950 isn't a
+   LaunchPad token; primary text (gray-900) is the nearest, and flips with the
+   theme. */
+.flyout .flyoutCurrent::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: calc(-2 * var(--lp-spacing-200));
+  top: var(--lp-size-4);
+  bottom: var(--lp-size-4);
+  width: var(--lp-size-3);
+  border-radius:
+    var(--lp-border-radius-regular) var(--lp-border-radius-medium) var(--lp-border-radius-medium)
+    var(--lp-border-radius-regular);
+  background: var(--lp-color-text-ui-primary-base);
+}
+
+.flyoutLeafLabel {
+  flex: 1;
+}
+
+.beta {
+  font: var(--lp-text-small-1-medium);
+  color: var(--lp-color-text-product-beta);
+  background: var(--lp-color-bg-product-beta);
+  border-radius: var(--lp-border-radius-regular);
+  padding-inline: var(--lp-spacing-200);
+}
+

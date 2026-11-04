@@ -19,7 +19,7 @@ A copy of [ld-nav-lab](https://github.com/launchdarkly-labs/ld-nav-lab) running 
   project as ld-nav-lab. Run `supabase/schema.sql` in the SQL editor once before sending links.
   `pnpm pull` downloads them to `agents-tree-test-results.json`.
 
-The click test page from ld-nav-lab is not included. Everything below is ld-nav-lab's original
+The click test page from ld-nav-lab is still in the repo but is left out of the build. Everything below is ld-nav-lab's original
 documentation; table and file names there refer to the original study.
 
 ---

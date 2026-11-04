@@ -1,0 +1,289 @@
+/* LaunchPad's Popover caps width at 400px; the tile grid needs more. */
+.popover[data-variant] {
+  padding: 0;
+  max-height: none;
+  max-width: calc(100vw - var(--lp-size-32));
+}
+
+/* Wide enough that the longest label, "Multi-armed bandit", stays on one line. */
+.popover[data-variant='tiles'] {
+  width: var(--lp-size-480);
+}
+
+.popover[data-variant='tiles'][data-described] {
+  width: var(--lp-size-560);
+}
+
+.popover[data-variant='compact'] {
+  width: var(--lp-size-400);
+}
+
+/* LaunchPad's Menu also caps at 400px; let it fill the popover. */
+.menu[data-variant] {
+  padding: var(--lp-spacing-300);
+  max-height: none;
+  max-width: none;
+  outline: none;
+}
+
+/* MenuSection renders a <section>; its items are the grid. */
+.menu > section {
+  display: grid;
+  gap: var(--lp-spacing-200);
+}
+
+
+.menu[data-variant='compact'] > section {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.header {
+  grid-column: 1 / -1;
+  padding: var(--lp-spacing-200) var(--lp-spacing-300);
+  font: var(--lp-text-small-1-semibold);
+  color: var(--lp-color-text-ui-secondary);
+}
+
+/* `.menu .tile` outranks LaunchPad's MenuItem grid so the tile owns its layout. */
+.menu .tile {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lp-spacing-400);
+  padding: var(--lp-spacing-400);
+  border-radius: var(--lp-border-radius-medium);
+  height: auto;
+  cursor: pointer;
+}
+
+.menu[data-variant='compact'] .tile {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--lp-spacing-300);
+}
+
+.menu[data-variant='list'] .tile {
+  align-items: center;
+  gap: var(--lp-spacing-300);
+  padding: var(--lp-spacing-300) var(--lp-spacing-400);
+}
+
+.tileIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--lp-size-32);
+  height: var(--lp-size-32);
+  border-radius: var(--lp-border-radius-medium);
+  background: var(--lp-color-bg-interactive-selected);
+  color: var(--lp-color-text-interactive-selected);
+}
+
+.menu[data-variant='compact'] .tileIcon {
+  width: var(--lp-size-40);
+  height: var(--lp-size-40);
+}
+
+.menu[data-variant='list'] .tileIcon {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--lp-color-text-ui-secondary);
+}
+
+.tileText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lp-spacing-100);
+  min-width: 0;
+}
+
+.tileLabel {
+  font: var(--lp-text-label-1-semibold);
+  color: var(--lp-color-text-ui-primary-base);
+}
+
+.menu[data-variant='list'] .tileLabel {
+  font: var(--lp-text-label-1-regular);
+}
+
+.tileDescription {
+  font: var(--lp-text-small-1-regular);
+  color: var(--lp-color-text-ui-secondary);
+  white-space: normal;
+}
+
+
+/* ── Tiles ────────────────────────────────────────────────────────────────
+   Two columns of four, 4px apart. Each tile is faced like LaunchPad's minimal
+   button: no border, shadow, or fill at rest; the minimal button's own
+   hover, pressed, and focus fills on interaction. */
+
+.menu[data-variant='tiles'] > section {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lp-spacing-200);
+}
+
+.menu[data-variant='tiles'] .header {
+  font: var(--lp-text-label-2-medium);
+}
+
+.menu[data-variant='tiles'] .tile {
+  align-items: center;
+  gap: var(--lp-spacing-300);
+  padding: var(--lp-spacing-300);
+  border: 0;
+  border-radius: var(--lp-border-radius-medium);
+  background-color: var(--lp-color-bg-interactive-tertiary-base);
+  box-shadow: none;
+
+  &[data-hovered],
+  &[data-focused] {
+    background-color: var(--lp-color-bg-interactive-tertiary-hover);
+  }
+
+  &[data-pressed] {
+    background-color: var(--lp-color-bg-interactive-tertiary-active);
+  }
+
+  &[data-focus-visible] {
+    background-color: var(--lp-color-bg-interactive-tertiary-focus);
+    outline: var(--lp-size-2) solid var(--lp-color-shadow-interactive-focus);
+    outline-offset: calc(-1 * var(--lp-size-2));
+  }
+}
+
+/* 24px box, 16px icon: the primary icon fill behind at rest, stepping up to
+   the primary text colour on hover, with the inverse text colour on the glyph,
+   so all three flip with the theme. */
+.menu[data-variant='tiles'] .tileIcon {
+  width: var(--lp-size-24);
+  height: var(--lp-size-24);
+  border-radius: var(--lp-border-radius-regular);
+  background: var(--lp-color-fill-ui-primary);
+  transition: background-color var(--lp-duration-150) ease;
+
+  & [data-icon] {
+    width: var(--lp-size-16);
+    height: var(--lp-size-16);
+    fill: var(--lp-color-text-ui-primary-inverted);
+  }
+}
+
+.menu[data-variant='tiles'] .tile:is([data-hovered], [data-focused]) .tileIcon {
+  background: var(--lp-color-text-ui-primary-base);
+}
+
+.menu[data-variant='tiles'] .tileText {
+  flex: 1;
+}
+
+.menu[data-variant='tiles'] .tileLabel {
+  font: var(--lp-text-label-1-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu[data-variant='tiles'] .tileText {
+  min-width: 0;
+}
+
+/* The arrow at the end of each tile shows only on hover or keyboard focus,
+   fading in as it nudges right. */
+.arrow {
+  flex: none;
+  opacity: 0;
+  fill: var(--lp-color-fill-ui-primary);
+  transition:
+    opacity var(--lp-duration-150) ease,
+    translate var(--lp-duration-200) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.menu .tile:is([data-hovered], [data-focused]) .arrow {
+  opacity: 1;
+  translate: var(--lp-size-2) 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow {
+    transition: opacity var(--lp-duration-150) ease;
+  }
+
+  .menu .tile:is([data-hovered], [data-focused]) .arrow {
+    translate: none;
+  }
+}
+
+/* With descriptions: the icon and arrow sit by the label's line, the
+   description runs under it. */
+.menu[data-variant='tiles'][data-described] .tile {
+  align-items: flex-start;
+}
+
+/* A 32px square beside the two lines; the icon stays 16px. */
+.menu[data-variant='tiles'][data-described] .tileIcon {
+  width: var(--lp-size-32);
+  height: var(--lp-size-32);
+}
+
+.menu[data-variant='tiles'][data-described] .tileText {
+  gap: var(--lp-spacing-100);
+  padding-top: var(--lp-spacing-100);
+}
+
+/* One line each, cut with an ellipsis. */
+.menu[data-variant='tiles'][data-described] .tileDescription {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu[data-variant='tiles'][data-described] .arrow {
+  margin-top: var(--lp-spacing-200);
+}
+
+/* With illustrations: each type's spot illustration in a 32px box on its product area's gradient, as the marketing site's product
+   tiles are (CodeControl's pink-to-orange, AgentControl's blue). LaunchPad's
+   light brand tints, to stay soft behind the line art. The line art reads on
+   them in either theme, so it isn't inverted for dark mode. */
+.spot {
+  position: relative;
+  flex: none;
+  width: var(--lp-size-32);
+  height: var(--lp-size-32);
+  border-radius: var(--lp-border-radius-medium);
+  overflow: hidden;
+}
+
+/* Each SVG is framed to its own ink (illustrations/*.svg viewBoxes), so one
+   rule balances all eight: fitted, whole, into a box the tile's full width
+   and 28px tall at its centre. Square and tall drawings take the 28px height
+   with gradient around them; wide ones (Flag, Metric, View) run edge to edge
+   across, rather than shrinking to fit a square. Nudged 1px down, so each
+   sits on the tile rather than floating in it. */
+.illustration {
+  position: absolute;
+  top: var(--lp-size-3);
+  left: var(--lp-spacing-100);
+  width: var(--lp-size-32);
+  height: var(--lp-size-28);
+  object-fit: contain;
+}
+
+.spot[data-area='features'] {
+  background: linear-gradient(160deg, var(--lp-color-brand-pink-light), var(--lp-color-brand-orange-light));
+}
+
+.spot[data-area='agents'] {
+  background: linear-gradient(160deg, var(--lp-color-brand-blue-light), var(--lp-color-brand-cyan-light));
+}
+
+.spot[data-area='experimentation'] {
+  background: linear-gradient(160deg, var(--lp-color-brand-purple-light), var(--lp-color-brand-pink-light));
+}
+
+.spot[data-area='audiences'] {
+  background: linear-gradient(160deg, var(--lp-color-brand-cyan-light), var(--lp-color-brand-lime-light));
+}
