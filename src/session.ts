@@ -211,19 +211,22 @@ export async function saveSession(session: StudySession): Promise<SaveResult> {
   // An upsert's ON CONFLICT has to read the conflicting row, and the privilege
   // that needs is less obvious than a plain update's. Being explicit about
   // which call is which keeps the grants in schema.sql easy to reason about.
-  const { error } = await withRetry(() =>
-    session.finished_at === null
-      ? client.from(TABLES.sessions).insert(session)
-      : client
-          .from(TABLES.sessions)
-          .update({
-            finished_at: session.finished_at,
-            participant_label: session.participant_label,
-            survey: session.survey,
-            survey_confusing: session.survey_confusing,
-          })
-          .eq('id', session.id),
-  );
+  // Finishing goes through a database function rather than a plain update.
+  // anon has no select policy, so row level security hides every row from an
+  // update's where clause: the update matches nothing and still reports
+  // success. The function returns whether it found the session.
+  const { error } = await withRetry(async () => {
+    if (session.finished_at === null) return client.from(TABLES.sessions).insert(session);
+    const { data, error: rpcError } = await client.rpc('agents_finish_session', {
+      p_id: session.id,
+      p_finished_at: session.finished_at,
+      p_label: session.participant_label,
+      p_survey: session.survey,
+      p_confusing: session.survey_confusing,
+    });
+    if (rpcError) return { error: rpcError };
+    return { error: data === true ? null : { code: 'P0002', message: 'The session to finish was not found.' } };
+  });
   if (error) return { local, remote: 'failed', error: describe(error) };
   return { local, remote: 'ok' };
 }

@@ -91,3 +91,32 @@ grant select (id) on table agents_sessions to anon;
 -- For pnpm pull and pnpm discard.
 grant select, delete on table agents_sessions, agents_events, agents_tasks to service_role;
 grant update         on table agents_sessions to service_role;
+
+-- Finishing a run (finished_at plus the survey). A plain update can't do this:
+-- with no select policy, RLS hides every row from its where clause and it
+-- silently updates nothing. See supabase/fix-finish.sql.
+create or replace function public.agents_finish_session(
+  p_id          uuid,
+  p_finished_at timestamptz,
+  p_label       text,
+  p_survey      jsonb,
+  p_confusing   text
+) returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  with updated as (
+    update agents_sessions
+       set finished_at       = p_finished_at,
+           participant_label = coalesce(p_label, participant_label),
+           survey            = p_survey,
+           survey_confusing  = p_confusing
+     where id = p_id
+    returning 1
+  )
+  select exists (select 1 from updated);
+$$;
+
+revoke execute on function public.agents_finish_session(uuid, timestamptz, text, jsonb, text) from public;
+grant  execute on function public.agents_finish_session(uuid, timestamptz, text, jsonb, text) to anon;
