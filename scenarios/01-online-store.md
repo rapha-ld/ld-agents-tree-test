@@ -6,8 +6,6 @@ persona: Software engineer who owns the AI support features at an online store
 
 You're a software engineer at an online store. Your team uses LaunchDarkly to ship features safely. The store also runs a few AI features for customer support: a support bot that answers questions, a bot that looks up orders, a tool that summarizes support tickets, and an automated refund process. This quarter you own making these AI features better, cheaper and safer to change. In each task, choose where in LaunchDarkly you'd go to get it done. There are no wrong answers; we're testing the menu, not you.
 
-<!-- Correct answers: Tree A id first, Tree B id second. Each tree contains only one of them. -->
-
 ## Your company's support bot should always reply in the customer's language. Change the instructions it follows. Select the page you'd try first.
 targets: support-bot.configure, support-bot.variations
 
