@@ -5,7 +5,7 @@
 # weeks with quiet stretches between rounds of recruiting is exactly the shape
 # that hits this. One request a day counts as activity.
 #
-# The request reads `sessions.id`, the single column `anon` is granted. Row
+# The request reads `agents_sessions.id`, the single column `anon` is granted. Row
 # level security returns no rows for it, so this reveals nothing and writes
 # nothing; it exists to be traffic.
 name: Keep Supabase awake
@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
           status=$(curl -s -o /tmp/body.txt -w '%{http_code}' \
-            "$SUPABASE_URL/rest/v1/sessions?select=id&limit=1" \
+            "$SUPABASE_URL/rest/v1/agents_sessions?select=id&limit=1" \
             -H "apikey: $SUPABASE_ANON_KEY" \
             -H "Authorization: Bearer $SUPABASE_ANON_KEY")
           echo "status: $status"

@@ -14,6 +14,7 @@
  * the report already handles.
  */
 import { createClient } from '@supabase/supabase-js';
+import { TABLES } from '../src/tables';
 import { fetchAllRows } from '../src/pull/paged';
 
 try {
@@ -52,7 +53,7 @@ const client = createClient(url, key, { auth: { persistSession: false } });
 const existing = await fetchAllRows<{ id: string; participant_label: string | null; scheme_id: string }>(
   async (from, to) => {
     const { data, error } = await client
-      .from('sessions')
+      .from(TABLES.sessions)
       .select('id,participant_label,scheme_id')
       .eq('id', id)
       .range(from, to);
@@ -67,7 +68,7 @@ if (existing.length === 0) {
 
 const who = existing[0].participant_label ?? 'an unnamed participant';
 
-const events = await client.from('events').delete({ count: 'exact' }).eq('session_id', id);
+const events = await client.from(TABLES.events).delete({ count: 'exact' }).eq('session_id', id);
 if (events.error) {
   console.error(`Could not delete the events: ${events.error.message}`);
   if (/permission denied/i.test(events.error.message)) {
@@ -76,13 +77,13 @@ if (events.error) {
   process.exit(1);
 }
 
-const responses = await client.from('responses').delete({ count: 'exact' }).eq('session_id', id);
-if (responses.error) {
-  console.error(`Deleted ${events.count ?? 0} events, but could not delete the answers: ${responses.error.message}`);
+const tasks = await client.from(TABLES.tasks).delete({ count: 'exact' }).eq('session_id', id);
+if (tasks.error) {
+  console.error(`Deleted ${events.count ?? 0} events, but could not delete the task results: ${tasks.error.message}`);
   process.exit(1);
 }
 
-const session = await client.from('sessions').delete({ count: 'exact' }).eq('id', id);
+const session = await client.from(TABLES.sessions).delete({ count: 'exact' }).eq('id', id);
 if (session.error) {
   console.error(`Deleted ${events.count ?? 0} events, but could not delete the session: ${session.error.message}`);
   process.exit(1);
@@ -90,6 +91,6 @@ if (session.error) {
 
 console.log(
   `Deleted ${who}'s run of ${existing[0].scheme_id}: ` +
-    `${events.count ?? 0} events, ${responses.count ?? 0} answers, ${session.count ?? 0} session.`,
+    `${events.count ?? 0} events, ${tasks.count ?? 0} task results, ${session.count ?? 0} session.`,
 );
-console.log('Run pnpm pull to refresh nav-lab-results.json.');
+console.log('Run pnpm pull to refresh agents-tree-test-results.json.');

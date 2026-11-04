@@ -7,10 +7,8 @@ export default defineConfig({
   base: './',
   build: {
     rollupOptions: {
-      // The tree test and the click test are separate pages with separate bundles.
       input: {
         main: resolve(__dirname, 'index.html'),
-        clicktest: resolve(__dirname, 'clicktest.html'),
       },
     },
   },

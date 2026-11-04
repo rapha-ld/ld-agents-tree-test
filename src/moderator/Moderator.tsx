@@ -4,7 +4,7 @@ import { persistenceMode } from '../session';
 import type { SchemeNode } from '../parse/types';
 
 /** Where the study is published, offered as an alternative to this machine. */
-const PUBLISHED = 'https://launchdarkly-labs.github.io/ld-nav-lab/';
+const PUBLISHED = 'https://rapha-ld.github.io/ld-agents-tree-test/';
 
 /** This dev server, which is what a link should point at while you are testing. */
 function here() {

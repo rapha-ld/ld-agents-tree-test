@@ -1,4 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { TABLES } from './tables';
+
+export { TABLES };
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -11,6 +14,7 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 export const persistenceMode: 'supabase' | 'local' = url && anonKey ? 'supabase' : 'local';
 
 const client = url && anonKey ? createClient(url, anonKey) : null;
+
 
 /**
  * `back` is moving up a level inside the menu. `stepback` is leaving a card
@@ -38,29 +42,38 @@ export type StudySession = {
   started_at: string;
   finished_at: string | null;
   user_agent: string;
+  /** Answer to the intro question about LaunchDarkly, so groups can be balanced. */
+  ld_usage: string | null;
+  /** Authored task indexes in the order this participant saw them. */
+  task_order: number[];
+  /** Post-test grid: one answer ('yes' | 'not-sure' | 'no') per capability id. */
+  survey: Record<string, string> | null;
+  survey_confusing: string | null;
 };
 
+export type TaskOutcomeKind = 'direct' | 'indirect' | 'fail' | 'skip';
+
 /**
- * A free-text answer given once per task, before the participant sees the menu
- * for that task. `prompt` records the question as it was worded at the time, so
- * rewording it later cannot silently change what old answers mean.
- *
- * Asked per task rather than per scenario: a scenario covers several different
- * jobs, and the word someone reaches for when turning a flag off is not the word
- * they reach for when checking a result.
+ * One row per task a participant finished or skipped. Outcome is worked out in
+ * the browser from that task's events so it can be read straight from the
+ * table; the events stay as the source of truth if the rules change.
  */
-export type StudyResponse = {
+export type StudyTaskResult = {
   session_id: string;
   scenario_id: string;
+  /** The task's position in the scenario file, which is its identity. */
   task_index: number;
-  /**
-   * 0 for the first answer to a task. A participant who steps back and answers
-   * again leaves a new row at the next revision rather than overwriting, so the
-   * change is visible and the highest revision is the final answer.
-   */
-  revision: number;
+  /** Where it came in this participant's shuffled order, from 0. */
+  position: number;
   prompt: string;
-  response: string;
+  outcome: TaskOutcomeKind;
+  answer_path: string | null;
+  answer_destination: string | null;
+  first_click: string | null;
+  time_on_task_ms: number | null;
+  /** 1 (not at all confident) to 7 (very confident). Null when skipped. */
+  confidence: number | null;
+  unsure_reason: string | null;
   ts: string;
 };
 
@@ -76,9 +89,9 @@ export type SaveResult = {
   error?: string;
 };
 
-const LOCAL_KEY = 'nav-lab-results';
+const LOCAL_KEY = 'agents-tree-test-results';
 
-type LocalStore = { sessions: StudySession[]; events: StudyEvent[]; responses: StudyResponse[] };
+type LocalStore = { sessions: StudySession[]; events: StudyEvent[]; tasks: StudyTaskResult[] };
 
 function readLocal(): LocalStore {
   try {
@@ -88,14 +101,13 @@ function readLocal(): LocalStore {
       return {
         sessions: parsed.sessions ?? [],
         events: parsed.events ?? [],
-        // Absent in anything written before responses existed.
-        responses: parsed.responses ?? [],
+        tasks: parsed.tasks ?? [],
       };
     }
   } catch {
     // A corrupt or unavailable store should not stop a participant mid-study.
   }
-  return { sessions: [], events: [], responses: [] };
+  return { sessions: [], events: [], tasks: [] };
 }
 
 function writeLocal(data: LocalStore): boolean {
@@ -178,7 +190,7 @@ export type WriteCheck = { ok: true } | { ok: false; reason: string };
 export async function checkWrite(): Promise<WriteCheck> {
   if (!client) return { ok: false, reason: 'No database is configured for this build.' };
   try {
-    const { error } = await client.from('sessions').select('id').limit(1);
+    const { error } = await client.from(TABLES.sessions).select('id').limit(1);
     return error ? { ok: false, reason: describe(error) } : { ok: true };
   } catch (e) {
     return { ok: false, reason: describe(e) };
@@ -201,10 +213,15 @@ export async function saveSession(session: StudySession): Promise<SaveResult> {
   // which call is which keeps the grants in schema.sql easy to reason about.
   const { error } = await withRetry(() =>
     session.finished_at === null
-      ? client.from('sessions').insert(session)
+      ? client.from(TABLES.sessions).insert(session)
       : client
-          .from('sessions')
-          .update({ finished_at: session.finished_at, participant_label: session.participant_label })
+          .from(TABLES.sessions)
+          .update({
+            finished_at: session.finished_at,
+            participant_label: session.participant_label,
+            survey: session.survey,
+            survey_confusing: session.survey_confusing,
+          })
           .eq('id', session.id),
   );
   if (error) return { local, remote: 'failed', error: describe(error) };
@@ -220,20 +237,20 @@ export async function saveEvents(events: StudyEvent[]): Promise<SaveResult> {
 
   if (!client) return { local, remote: 'skipped' };
 
-  const { error } = await withRetry(() => client.from('events').insert(events));
+  const { error } = await withRetry(() => client.from(TABLES.events).insert(events));
   if (error) return { local, remote: 'failed', error: describe(error) };
   return { local, remote: 'ok' };
 }
 
-/** Written once per task, before the participant sees the menu. */
-export async function saveResponse(response: StudyResponse): Promise<SaveResult> {
+/** Written once per task, after the confidence question or a skip. */
+export async function saveTaskResult(result: StudyTaskResult): Promise<SaveResult> {
   const store = readLocal();
-  store.responses.push(response);
+  store.tasks.push(result);
   const local = writeLocal(store);
 
   if (!client) return { local, remote: 'skipped' };
 
-  const { error } = await withRetry(() => client.from('responses').insert(response));
+  const { error } = await withRetry(() => client.from(TABLES.tasks).insert(result));
   if (error) return { local, remote: 'failed', error: describe(error) };
   return { local, remote: 'ok' };
 }

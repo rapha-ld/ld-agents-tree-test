@@ -1,5 +1,5 @@
 /**
- * Pull every study result into nav-lab-results.json, which the report loads
+ * Pull every study result into agents-tree-test-results.json, which the report loads
  * through its "Load results" control.
  *
  * This script is the only thing that reads the study tables. The browser never
@@ -16,7 +16,8 @@ import { createClient } from '@supabase/supabase-js';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fetchAllRows } from '../src/pull/paged';
-import type { StudyEvent, StudyResponse, StudySession } from '../src/session';
+import type { StudyEvent, StudySession, StudyTaskResult } from '../src/session';
+import { TABLES } from '../src/tables';
 
 try {
   process.loadEnvFile('.env.local');
@@ -41,28 +42,28 @@ const client = createClient(url, key, { auth: { persistSession: false } });
 // rather than handed straight to fetchAllRows.
 async function pull() {
   const sessions = await fetchAllRows<StudySession>(async (from, to) => {
-    const { data, error } = await client.from('sessions').select('*').order('started_at').range(from, to);
+    const { data, error } = await client.from(TABLES.sessions).select('*').order('started_at').range(from, to);
     return { data: data as StudySession[] | null, error };
   });
 
   const events = await fetchAllRows<StudyEvent>(async (from, to) => {
-    const { data, error } = await client.from('events').select('*').order('id').range(from, to);
+    const { data, error } = await client.from(TABLES.events).select('*').order('id').range(from, to);
     return { data: data as StudyEvent[] | null, error };
   });
 
-  const responses = await fetchAllRows<StudyResponse>(async (from, to) => {
-    const { data, error } = await client.from('responses').select('*').order('id').range(from, to);
-    return { data: data as StudyResponse[] | null, error };
+  const tasks = await fetchAllRows<StudyTaskResult>(async (from, to) => {
+    const { data, error } = await client.from(TABLES.tasks).select('*').order('id').range(from, to);
+    return { data: data as StudyTaskResult[] | null, error };
   });
 
-  return { sessions, events, responses };
+  return { sessions, events, tasks };
 }
 
 let sessions: StudySession[];
 let events: StudyEvent[];
-let responses: StudyResponse[];
+let tasks: StudyTaskResult[];
 try {
-  ({ sessions, events, responses } = await pull());
+  ({ sessions, events, tasks } = await pull());
 } catch (e) {
   const message = e instanceof Error ? e.message : String(e);
   console.error(`Could not read the study tables: ${message}`);
@@ -75,12 +76,12 @@ try {
   process.exit(1);
 }
 
-const outPath = join(process.cwd(), 'nav-lab-results.json');
-writeFileSync(outPath, `${JSON.stringify({ sessions, events, responses }, null, 2)}\n`);
+const outPath = join(process.cwd(), 'agents-tree-test-results.json');
+writeFileSync(outPath, `${JSON.stringify({ sessions, events, tasks }, null, 2)}\n`);
 
 const finished = sessions.filter((s) => s.finished_at).length;
 
 console.log(`sessions:  ${sessions.length} (${finished} finished, ${sessions.length - finished} abandoned)`);
 console.log(`events:    ${events.length}`);
-console.log(`answers:   ${responses.length} (what people said they would look for)`);
+console.log(`tasks:     ${tasks.length} (one row per finished or skipped task)`);
 console.log(`written:   ${outPath}`);
